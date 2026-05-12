@@ -1,12 +1,17 @@
 import React from 'react';
-import { Home, Grid3X3, Pill, ClipboardCheck, MoreHorizontal, Menu, RefreshCw, Sun, Moon } from 'lucide-react';
+import { Home, Grid3X3, Pill, ClipboardCheck, MoreHorizontal, Menu, RefreshCw, Sun, Moon, MessageSquare } from 'lucide-react';
 
 export function Layout({ children, page, setPage, reload, theme, toggleTheme, dbStatus, loading }) {
   return (
     <div className="app">
       <header>
-        <button className="icon"><Menu size={22}/></button>
-        <b>Kennel<span>Check</span></b>
+        <button
+          className="icon"
+          onClick={() => setPage('text-alert')}>
+          <MessageSquare size={22}/>
+          <span>Low Stock Text</span>
+        </button>
+        <b>BINX<span> Q</span></b>
         <div className="headerActions">
           <button className="icon" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={19}/> : <Moon size={19}/>}</button>
           <button className="icon" onClick={reload}><RefreshCw size={19}/></button>

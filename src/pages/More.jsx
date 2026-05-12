@@ -2,7 +2,7 @@ import React from 'react';
 import { Database, RefreshCw } from 'lucide-react';
 import { syncFromMockShelterluv } from '../lib/api';
 
-export function More({ reload, dbStatus, setDbStatus }) {
+export function More({ reload, dbStatus, setDbStatus, setPage }) {
   async function sync() {
     try {
       setDbStatus('Syncing mock Shelterluv...');
@@ -22,10 +22,10 @@ export function More({ reload, dbStatus, setDbStatus }) {
         <p><b>Status:</b> {dbStatus}</p>
         <button className="primary" onClick={sync}><RefreshCw size={16}/> Sync Mock Shelterluv</button>
       </section>
-      <section className="panel">
+      {/* <section className="panel">
         <h2>Setup reminder</h2>
         <p>Run <code>supabase_complete_setup.sql</code> in Supabase, then add your project URL and publishable key to <code>.env</code>.</p>
-      </section>
+      </section> */}
     </main>
   );
 }

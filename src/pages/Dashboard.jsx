@@ -7,7 +7,7 @@ export function Dashboard({ data, alerts, setPage, select }) {
   return (
     <main>
       <h1>Quarantine Dashboard</h1>
-      <p>Live data from Supabase. No hardcoded animals.</p>
+      <p>Live data from Supabase. NOT ShelterLuv</p>
 
       <section className="stats">
         <Stat n={data.animals.length} t="Animals" kind="green"/>

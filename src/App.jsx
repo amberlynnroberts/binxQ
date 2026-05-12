@@ -9,6 +9,7 @@ import { AnimalCard } from './pages/AnimalCard';
 import { Meds } from './pages/Meds';
 import { Shift } from './pages/Shift';
 import { More } from './pages/More';
+import { TextAlert } from './pages/TextAlert';
 
 export default function App() {
   const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -82,7 +83,9 @@ export default function App() {
       {page === 'edit' && animal && <AnimalForm title={`Edit ${animal.name}`} initialForm={editInitial} submitText="Save Changes" onSubmit={editAnimal} onCancel={() => setPage('card')}/>}
       {page === 'meds' && <Meds data={data} select={selectAnimal}/>}
       {page === 'shift' && <Shift data={data}/>}
-      {page === 'more' && <More reload={reload} dbStatus={dbStatus} setDbStatus={() => {}}/>}
+      {page === 'more' && <More reload={reload} dbStatus={dbStatus} setDbStatus={setDbStatus} setPage={setPage}/>}
+      {page === 'text-alert' && <TextAlert />}
+
     </Layout>
   );
 }
