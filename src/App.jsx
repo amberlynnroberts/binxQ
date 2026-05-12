@@ -16,7 +16,7 @@ export default function App() {
   const [page, setPage] = useState('dashboard');
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
-  const [theme, setTheme] = useState(() => localStorage.getItem('kennelcheck-theme') || 'light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('kennelcheck-theme') || 'dark');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
