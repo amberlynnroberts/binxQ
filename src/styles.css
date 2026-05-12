@@ -732,6 +732,23 @@ nav button.on {
   gap: 8px;
 }
 
+.medicationPanel h3 { margin: 0; }
+.medCrudList { display: grid; gap: 12px; }
+.medCrudCard { border: 1px solid var(--border); background: var(--card-bg); border-radius: 18px; padding: 14px; }
+.medCrudCard.active { border-left: 5px solid var(--success); }
+.medCrudCard.inactive { opacity: 0.78; border-left: 5px solid var(--muted); }
+.medCrudCard p { margin: 4px 0 0; }
+.medMeta { display: grid; gap: 6px; background: var(--soft); border-radius: 14px; padding: 10px; margin: 10px 0; color: var(--text); }
+.medMeta span { color: var(--text); }
+.medHistory { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 14px; }
+.medHistory h3 { display: flex; align-items: center; gap: 8px; }
+.medLog { border: 1px solid var(--border); background: var(--soft); border-radius: 14px; padding: 10px; margin-top: 8px; }
+.medLog b, .medLog small { display: block; }
+.medLog p { margin: 6px 0 0; }
+.subhead { margin-top: 18px !important; margin-bottom: 10px !important; }
+.medForm { border: 2px solid var(--primary); }
+
+
 @media (min-width: 720px) {
   .formRow.two {
     grid-template-columns: 1fr 1fr;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Edit3, Save, Trash2 } from 'lucide-react';
 import { addNote, removeFromQuarantine, symptomOptions, toggleSymptom } from '../lib/api';
 import { PhotoUploader } from '../components/AnimalPhoto';
+import { MedicationManager } from '../components/MedicationManager';
 
 export function AnimalCard({ animal, data, back, reload, edit }) {
   const [note, setNote] = useState('');
@@ -79,8 +80,7 @@ export function AnimalCard({ animal, data, back, reload, edit }) {
 
       <section className="panel pink">
         <h2>Meds</h2>
-        {meds.length === 0 && <p>No active meds.</p>}
-        {meds.map(m => <div className="med" key={m.id}><b>{m.name}</b><small>{m.dose}</small><span>{m.schedule} · {m.nextDue}</span></div>)}
+        <MedicationManager animal={animal} reload={reload} />
       </section>
 
       <section className="panel">
