@@ -12,9 +12,13 @@ export function isArchivedAnimal(animal) {
 }
 
 export function isQuarantineAnimal(animal) {
-  return (
-    animal?.shelterluv_status === 'Quarantine - HBCM - not available'
-  );
+  const status = String(
+    animal?.shelterluv_status ||
+    animal?.status ||
+    ''
+  ).toLowerCase();
+
+  return status.includes('quarantine');
 }
 
 export function isInRescueAnimal(animal) {
