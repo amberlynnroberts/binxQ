@@ -748,6 +748,74 @@ nav button.on {
 .subhead { margin-top: 18px !important; margin-bottom: 10px !important; }
 .medForm { border: 2px solid var(--primary); }
 
+.animalFilterPanel {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.filterChip {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: 0 8px 22px var(--shadow);
+  font-weight: 800;
+}
+
+.filterChip span {
+  text-align: left;
+}
+
+.filterChip b {
+  background: var(--soft);
+  color: var(--muted);
+  border-radius: 999px;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filterChip.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.filterChip.active b {
+  background: var(--primary);
+  color: white;
+}
+
+.viewHelper {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 12px;
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.row small + small {
+  margin-top: 2px;
+}
+
+@media (min-width: 720px) {
+  .animalFilterPanel {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
 
 @media (min-width: 720px) {
   .formRow.two {

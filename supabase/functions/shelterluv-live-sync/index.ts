@@ -56,7 +56,21 @@ function normalizeShelterluvAnimal(raw: any) {
     photo_url: normalizePhoto(raw),
     primary_breed: primaryBreed || null,
     secondary_breed: secondaryBreed || null,
-    altered: firstValue(raw.altered, raw.Altered, raw.spayed_neutered, raw.SpayedNeutered, raw.spayedNeutered, null),
+    altered: (() => {
+      const value = firstValue(
+        raw.altered,
+        raw.Altered,
+        raw.spayed_neutered,
+        raw.SpayedNeutered,
+        raw.spayedNeutered,
+        null
+      );
+
+      if (value === true || value === 'Yes' || value === 'yes') return true;
+      if (value === false || value === 'No' || value === 'no') return false;
+
+      return null;
+    })(),    
     primary_color: primaryColor || null,
     secondary_color: secondaryColor || null,
     size_group: firstValue(raw.size_group, raw.SizeGroup, raw.size, raw.Size, raw.sizeGroup, null),

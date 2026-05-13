@@ -2,28 +2,89 @@ import React from 'react';
 import { ChevronRight, Plus, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
+import { getAnimalFilterCounts } from '../lib/animalFilters';
 
-export function Kennels({ data, query, setQuery, select, add }) {
+export function Kennels({
+  data,
+  allAnimals = data.animals,
+  query,
+  setQuery,
+  select,
+  add,
+  animalView = 'quarantine',
+  setAnimalView
+}) {
+  const counts = getAnimalFilterCounts(allAnimals);
+
   const list = data.animals.filter(a =>
-    `${a.name} ${a.kennel} ${a.status} ${a.desc}`.toLowerCase().includes(query.toLowerCase())
+    `${a.name} ${a.kennel} ${a.status} ${a.shelterluv_status || ''} ${a.desc}`
+      .toLowerCase()
+      .includes(query.toLowerCase())
   );
+
+  function FilterButton({ value, label, count }) {
+    const active = animalView === value;
+
+    return (
+      <button
+        type="button"
+        className={active ? 'filterChip active' : 'filterChip'}
+        onClick={() => setAnimalView?.(value)}
+      >
+        <span>{label}</span>
+        <b>{count}</b>
+      </button>
+    );
+  }
 
   return (
     <main>
       <div className="title">
-        <h1>Quarantine Kennels</h1>
+        <h1>Animals</h1>
         <button className="primary" onClick={add}><Plus size={18}/> Add</button>
       </div>
 
-      <label className="search"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search cats or kennels..." /></label>
+      <section className="animalFilterPanel">
+        <FilterButton value="quarantine" label="Quarantine Only" count={counts.quarantine} />
+        <FilterButton value="rescue" label="In Rescue" count={counts.rescue} />
+        <FilterButton value="archived" label="Archived" count={counts.archived} />
+      </section>
+
+      <label className="search">
+        <Search size={16}/>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search cats, kennels, status..."
+        />
+      </label>
+
+      <div className="viewHelper">
+        {animalView === 'quarantine' && 'Showing only active quarantine animals.'}
+        {animalView === 'rescue' && 'Showing active animals currently in the rescue.'}
+        {animalView === 'archived' && 'Showing archived animals such as adopted, transferred, deceased, or returned.'}
+      </div>
 
       <div className="list">
-        {list.length === 0 && <Empty text="No cats showing. Check Supabase data and app env keys." />}
+        {list.length === 0 && (
+          <Empty text={
+            animalView === 'archived'
+              ? 'No archived animals found.'
+              : animalView === 'rescue'
+                ? 'No active rescue animals found.'
+                : 'No quarantine animals found.'
+          } />
+        )}
+
         {list.map(a => (
           <button className="row" key={a.id} onClick={() => select(a.id)}>
             <span className={'kennel ' + String(a.status).toLowerCase()}>{kennelShort(a.kennel)}</span>
             <AnimalThumb animal={a}/>
-            <span><b>{a.name}</b><small>{a.desc} • {a.sex} • {a.age}</small></span>
+            <span>
+              <b>{a.name}</b>
+              <small>{a.desc} • {a.sex} • {a.age}</small>
+              {a.shelterluv_status && <small>Shelterluv: {a.shelterluv_status}</small>}
+            </span>
             <em>{a.status}</em>
             <ChevronRight/>
           </button>

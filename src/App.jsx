@@ -10,6 +10,7 @@ import { Meds } from './pages/Meds';
 import { Shift } from './pages/Shift';
 import { More } from './pages/More';
 import { TextAlert } from './pages/TextAlert';
+import { filterAnimalsByView } from './lib/animalFilters';
 
 export default function App() {
   const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -17,6 +18,7 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('kennelcheck-theme') || 'dark');
+  const [animalView, setAnimalView] = useState('quarantine');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -66,6 +68,9 @@ export default function App() {
     local_status: animal.status || 'Quarantine'
   } : defaultAnimalForm();
 
+  const visibleAnimals = filterAnimalsByView(data.animals, animalView);
+  const visibleData = { ...data, animals: visibleAnimals };
+
   return (
     <Layout
       page={page}
@@ -76,13 +81,13 @@ export default function App() {
       theme={theme}
       toggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
     >
-      {page === 'dashboard' && <Dashboard data={data} alerts={alerts} setPage={setPage} select={selectAnimal}/>}
-      {page === 'kennels' && <Kennels data={data} query={query} setQuery={setQuery} select={selectAnimal} add={() => setPage('add')}/>}
+      {page === 'dashboard' && <Dashboard data={visibleData} alerts={alerts} setPage={setPage} select={selectAnimal}/>}
+      {page === 'kennels' && <Kennels data={visibleData} allAnimals={data.animals} query={query} setQuery={setQuery} select={selectAnimal} add={() => setPage('add')} animalView={animalView} setAnimalView={setAnimalView}/>}
       {page === 'add' && <AnimalForm title="Add Cat to Quarantine" initialForm={defaultAnimalForm()} submitText="Add Cat" onSubmit={addAnimal} onCancel={() => setPage('kennels')}/>}
       {page === 'card' && animal && <AnimalCard animal={animal} data={data} reload={reload} back={() => setPage('kennels')} edit={() => setPage('edit')}/>}
       {page === 'edit' && animal && <AnimalForm title={`Edit ${animal.name}`} initialForm={editInitial} submitText="Save Changes" onSubmit={editAnimal} onCancel={() => setPage('card')}/>}
-      {page === 'meds' && <Meds data={data} select={selectAnimal}/>}
-      {page === 'shift' && <Shift data={data}/>}
+      {page === 'meds' && <Meds data={visibleData} select={selectAnimal}/>}
+      {page === 'shift' && <Shift data={visibleData}/>}
       {page === 'more' && <More reload={reload} dbStatus={dbStatus} setDbStatus={setDbStatus} setPage={setPage}/>}
       {page === 'text-alert' && <TextAlert />}
 
