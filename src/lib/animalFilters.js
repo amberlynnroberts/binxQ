@@ -12,14 +12,8 @@ export function isArchivedAnimal(animal) {
 }
 
 export function isQuarantineAnimal(animal) {
-  const localStatus = String(animal?.status || animal?.local_status || '').toLowerCase();
-  const kennel = String(animal?.kennel || '').toLowerCase();
-  const location = String(animal?.location || '').toLowerCase();
-
   return (
-    localStatus.includes('quarantine') ||
-    kennel.includes('quarantine') ||
-    location.includes('quarantine')
+    animal?.shelterluv_status === 'Quarantine - HBCM - not available'
   );
 }
 
