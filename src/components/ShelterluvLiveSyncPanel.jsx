@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, PlugZap, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { syncFromShelterluv, fetchShelterluvSyncRuns } from '../lib/shelterluvSyncApi';
 
-export function ShelterluvSyncPanel({ reload }) {
+export function ShelterluvLiveSyncPanel({ reload }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [runs, setRuns] = useState([]);
