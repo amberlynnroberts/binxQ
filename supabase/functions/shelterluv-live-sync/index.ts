@@ -29,57 +29,54 @@ function normalizePhoto(raw: any): string | null {
     if (typeof first === "string") return first;
     return first.url || first.Url || first.large || first.medium || first.small || first.original || null;
   }
-  return raw.photo_url || raw.photoUrl || raw.PhotoUrl || raw.image || raw.Image || null;
+  return raw.CoverPhoto || raw.coverPhoto || raw.photo_url || raw.photoUrl || raw.PhotoUrl || raw.image || raw.Image || null;
+}
+
+function unixToDate(value: any): string | null {
+  if (!value) return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return new Date(n * 1000).toISOString().slice(0, 10);
 }
 
 function normalizeShelterluvAnimal(raw: any) {
   const shelterluv_id = String(firstValue(
-    raw.shelterluv_id, raw.animal_id, raw.animalId, raw.id, raw.ID,
-    raw.AnimalId, raw.AnimalID, raw["Animal ID"], raw.InternalID, raw.internal_id
+    raw.ID, raw.id, raw.shelterluv_id, raw.animal_id, raw.animalId,
+    raw.AnimalId, raw.AnimalID, raw["Animal ID"], raw["Internal-ID"],
+    raw.InternalID, raw.internal_id
   ));
 
   const primaryBreed = firstValue(raw.primary_breed, raw.PrimaryBreed, raw.breed, raw.Breed, raw.primaryBreed);
-  const secondaryBreed = firstValue(raw.secondary_breed, raw.SecondaryBreed, raw.secondaryBreed);
   const primaryColor = firstValue(raw.primary_color, raw.PrimaryColor, raw.color, raw.Color, raw.primaryColor);
-  const secondaryColor = firstValue(raw.secondary_color, raw.SecondaryColor, raw.secondaryColor);
 
   return {
     shelterluv_id,
     name: firstValue(raw.name, raw.Name, raw.animal_name, raw.AnimalName, raw.animalName, "Unnamed"),
-    species: firstValue(raw.species, raw.Species, raw.animal_type, raw.AnimalType, raw.type, "Cat"),
+    species: firstValue(raw.species, raw.Species, raw.animal_type, raw.AnimalType, raw.type, raw.Type, "Cat"),
     sex: firstValue(raw.sex, raw.Sex, raw.gender, raw.Gender, "Unknown"),
-    age: firstValue(raw.age, raw.Age, raw.age_group, raw.AgeGroup, raw.ageGroup, ""),
+    age: String(firstValue(raw.age, raw.Age, raw.age_group, raw.AgeGroup, raw.ageGroup, "")),
     color: firstValue(raw.color, raw.Color, primaryColor, ""),
-    intake_date: firstValue(raw.intake_date, raw.IntakeDate, raw.intakeDate, null),
+    intake_date: firstValue(raw.intake_date, raw.IntakeDate, raw.intakeDate, unixToDate(raw.LastIntakeUnixTime), null),
     status: firstValue(raw.status, raw.Status, raw.current_status, raw.currentStatus, "In Shelter"),
-    location: firstValue(raw.location, raw.Location, raw.kennel, raw.Kennel, raw.current_location, raw.currentLocation, null),
+    location: firstValue(raw.location, raw.Location, raw.kennel, raw.Kennel, raw.current_location, raw.currentLocation, raw.CurrentLocation?.Tier1, raw.CurrentLocation?.Tier2, null),
     photo_url: normalizePhoto(raw),
     primary_breed: primaryBreed || null,
-    secondary_breed: secondaryBreed || null,
+    secondary_breed: firstValue(raw.secondary_breed, raw.SecondaryBreed, raw.secondaryBreed, null),
     altered: (() => {
-      const value = firstValue(
-        raw.altered,
-        raw.Altered,
-        raw.spayed_neutered,
-        raw.SpayedNeutered,
-        raw.spayedNeutered,
-        null
-      );
-
-      if (value === true || value === 'Yes' || value === 'yes') return true;
-      if (value === false || value === 'No' || value === 'no') return false;
-
+      const value = firstValue(raw.altered, raw.Altered, raw.spayed_neutered, raw.SpayedNeutered, raw.spayedNeutered, null);
+      if (value === true || value === "Yes" || value === "yes") return true;
+      if (value === false || value === "No" || value === "no") return false;
       return null;
-    })(),    
+    })(),
     primary_color: primaryColor || null,
-    secondary_color: secondaryColor || null,
+    secondary_color: firstValue(raw.secondary_color, raw.SecondaryColor, raw.secondaryColor, null),
     size_group: firstValue(raw.size_group, raw.SizeGroup, raw.size, raw.Size, raw.sizeGroup, null),
-    current_weight: firstValue(raw.current_weight, raw.CurrentWeight, raw.weight, raw.Weight, raw.currentWeight, null),
+    current_weight: firstValue(raw.current_weight, raw.CurrentWeight, raw.CurrentWeightPounds, raw.weight, raw.Weight, raw.currentWeight, null),
     age_group: firstValue(raw.age_group, raw.AgeGroup, raw.ageGroup, null),
-    estimated_birthdate: firstValue(raw.estimated_birthdate, raw.EstimatedBirthdate, raw.birthdate, raw.Birthdate, raw.estimatedBirthdate, null),
-    microchip_number: firstValue(raw.microchip_number, raw.MicrochipNumber, raw.microchip, raw.Microchip, raw.microchipNumber, null),
-    website_kennel_card_memo: firstValue(raw.website_kennel_card_memo, raw.WebsiteKennelCardMemo, raw.memo, raw.Memo, null),
-    adoption_fee_group: firstValue(raw.adoption_fee_group, raw.AdoptionFeeGroup, null),
+    estimated_birthdate: firstValue(raw.estimated_birthdate, raw.EstimatedBirthdate, raw.birthdate, raw.Birthdate, raw.estimatedBirthdate, unixToDate(raw.DOBUnixTime), null),
+    microchip_number: firstValue(raw.microchip_number, raw.MicrochipNumber, raw.microchip, raw.Microchip, raw.Microchips?.[0], raw.microchipNumber, null),
+    website_kennel_card_memo: firstValue(raw.website_kennel_card_memo, raw.WebsiteKennelCardMemo, raw.Description, raw.description, raw.memo, raw.Memo, null),
+    adoption_fee_group: firstValue(raw.adoption_fee_group, raw.AdoptionFeeGroup?.Name, raw.AdoptionFeeGroup, null),
     attributes: firstValue(raw.attributes, raw.Attributes, {}),
     photos: firstValue(raw.photos, raw.Photos, raw.images, raw.Images, []),
     raw_shelterluv_payload: raw,
@@ -87,13 +84,34 @@ function normalizeShelterluvAnimal(raw: any) {
   };
 }
 
-async function fetchShelterluvAnimals() {
+function buildShelterluvUrl(endpoint: string, mode: string, body: any) {
+  const url = new URL(endpoint);
+  url.searchParams.set("sort", body.sort || "updated_at");
+  url.searchParams.set("since", String(body.since || "1672531199"));
+  url.searchParams.set("limit", String(body.limit || "100"));
+  url.searchParams.set("offset", String(body.offset || "0"));
+
+  if (mode === "in_custody" || mode === "quarantine") {
+    url.searchParams.set("status_type", "in custody");
+  } else if (mode === "archived") {
+    url.searchParams.set("status_type", body.status_type || "not in custody");
+  }
+
+  if (body.status) url.searchParams.set("status", body.status);
+  if (body.status_type) url.searchParams.set("status_type", body.status_type);
+
+  return url.toString();
+}
+
+async function fetchShelterluvAnimals(mode: string, body: any) {
   const apiKey = Deno.env.get("SHELTERLUV_API_KEY");
   const endpoint = Deno.env.get("SHELTERLUV_ANIMALS_ENDPOINT");
   if (!apiKey) throw new Error("Missing SHELTERLUV_API_KEY secret");
   if (!endpoint) throw new Error("Missing SHELTERLUV_ANIMALS_ENDPOINT secret");
 
-  const response = await fetch(endpoint, {
+  const url = buildShelterluvUrl(endpoint, mode, body);
+
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
@@ -105,12 +123,12 @@ async function fetchShelterluvAnimals() {
   });
 
   const text = await response.text();
-  if (!response.ok) throw new Error(`Shelterluv API failed: ${response.status} ${text.slice(0, 500)}`);
+  if (!response.ok) throw new Error(`Shelterluv API failed: ${response.status} ${text.slice(0, 500)} URL=${url}`);
 
   try {
-    return JSON.parse(text);
+    return { payload: JSON.parse(text), url };
   } catch {
-    throw new Error(`Shelterluv response was not JSON: ${text.slice(0, 500)}`);
+    throw new Error(`Shelterluv response was not JSON: ${text.slice(0, 500)} URL=${url}`);
   }
 }
 
@@ -124,6 +142,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const body = await req.json().catch(() => ({}));
+    const mode = body.mode || "in_custody";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -142,14 +163,23 @@ serve(async (req) => {
     let animalsSeen = 0;
     let animalsUpserted = 0;
     let preview: any = null;
+    let usedUrl = "";
 
     try {
-      const payload = await fetchShelterluvAnimals();
-      const rawAnimals = extractAnimalArray(payload);
+      const fetched = await fetchShelterluvAnimals(mode, body);
+      usedUrl = fetched.url;
+      const rawAnimals = extractAnimalArray(fetched.payload);
       animalsSeen = rawAnimals.length;
-      preview = Array.isArray(rawAnimals) ? rawAnimals.slice(0, 2) : payload;
+      preview = { mode, usedUrl, sample: rawAnimals.slice(0, 2) };
 
-      const normalized = rawAnimals
+      let recordsToSync = rawAnimals;
+      if (mode === "quarantine") {
+        recordsToSync = rawAnimals.filter((animal) =>
+          String(animal.Status || animal.status || "").trim().toLowerCase() === "quarantine - hbcm - not available"
+        );
+      }
+
+      const normalized = recordsToSync
         .map(normalizeShelterluvAnimal)
         .filter(a => a.shelterluv_id && a.shelterluv_id !== "undefined");
 
@@ -172,7 +202,7 @@ serve(async (req) => {
         raw_response_preview: preview,
       }).eq("id", run.id);
 
-      return new Response(JSON.stringify({ ok: true, animals_seen: animalsSeen, animals_upserted: animalsUpserted, preview }), {
+      return new Response(JSON.stringify({ ok: true, mode, used_url: usedUrl, animals_seen: animalsSeen, animals_upserted: animalsUpserted, preview }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (err) {
@@ -182,7 +212,7 @@ serve(async (req) => {
         animals_seen: animalsSeen,
         animals_upserted: animalsUpserted,
         error_message: err.message,
-        raw_response_preview: preview,
+        raw_response_preview: preview || { mode, usedUrl },
       }).eq("id", run.id);
       throw err;
     }

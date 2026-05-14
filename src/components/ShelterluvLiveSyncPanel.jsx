@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, PlugZap, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { syncFromShelterluv, fetchShelterluvSyncRuns } from '../lib/shelterluvSyncApi';
+import { AlertTriangle, CheckCircle2, PlugZap, RefreshCw } from 'lucide-react';
+import {
+  fetchShelterluvSyncRuns,
+  syncShelterluvArchived,
+  syncShelterluvInCustody,
+  syncShelterluvQuarantine
+} from '../lib/shelterluvLiveApi';
 
 export function ShelterluvLiveSyncPanel({ reload }) {
-  const [busy, setBusy] = useState(false);
+  const [busyMode, setBusyMode] = useState('');
   const [message, setMessage] = useState('');
   const [runs, setRuns] = useState([]);
 
@@ -19,21 +24,26 @@ export function ShelterluvLiveSyncPanel({ reload }) {
     loadRuns();
   }, []);
 
-  async function sync() {
-    setBusy(true);
+  async function runSync(mode) {
+    setBusyMode(mode);
     setMessage('');
 
     try {
-      const result = await syncFromShelterluv();
-      setMessage(`Shelterluv sync complete: ${result.animals_upserted || 0} animals updated.`);
-      await reload?.();
+      let result;
+
+      if (mode === 'quarantine') result = await syncShelterluvQuarantine();
+      else if (mode === 'archived') result = await syncShelterluvArchived();
+      else result = await syncShelterluvInCustody();
+
+      setMessage(`${mode} sync complete: ${result.animals_upserted || 0} animals updated.`);
+      if (typeof reload === 'function') await reload();
       await loadRuns();
     } catch (err) {
       console.error(err);
       setMessage(`Shelterluv sync failed: ${err.message || 'Unknown error'}`);
       await loadRuns();
     } finally {
-      setBusy(false);
+      setBusyMode('');
     }
   }
 
@@ -41,13 +51,25 @@ export function ShelterluvLiveSyncPanel({ reload }) {
 
   return (
     <section className="panel">
-      <h2><PlugZap size={18}/> Shelterluv Integration</h2>
-      <p>Pull animals from Shelterluv into KennelCheck. Shelterluv stays the source of truth; KennelCheck tracks quarantine operations.</p>
+      <h2><PlugZap size={18}/> Shelterluv Live Sync</h2>
+      <p>Pull animal data from Shelterluv into KennelCheck.</p>
 
-      <button className="primary" onClick={sync} disabled={busy}>
-        <RefreshCw size={16}/>
-        {busy ? 'Syncing Shelterluv...' : 'Sync Shelterluv'}
-      </button>
+      <div className="syncButtonGrid">
+        <button className="primary full" type="button" onClick={() => runSync('quarantine')} disabled={!!busyMode}>
+          <RefreshCw size={16}/>
+          {busyMode === 'quarantine' ? 'Syncing...' : 'Sync Quarantine'}
+        </button>
+
+        <button className="link full" type="button" onClick={() => runSync('in_custody')} disabled={!!busyMode}>
+          <RefreshCw size={16}/>
+          {busyMode === 'in_custody' ? 'Syncing...' : 'Sync In Custody'}
+        </button>
+
+        <button className="link full" type="button" onClick={() => runSync('archived')} disabled={!!busyMode}>
+          <RefreshCw size={16}/>
+          {busyMode === 'archived' ? 'Syncing...' : 'Sync Archived'}
+        </button>
+      </div>
 
       {message && (
         <p className={message.includes('failed') ? 'error' : 'success'}>
@@ -58,12 +80,11 @@ export function ShelterluvLiveSyncPanel({ reload }) {
 
       {latest && (
         <div className="history">
-          <span>Last sync</span>
           <p>
-            Status: <b>{latest.status}</b><br/>
-            Animals seen: {latest.animals_seen}<br/>
-            Animals updated: {latest.animals_upserted}<br/>
-            Started: {new Date(latest.started_at).toLocaleString()}
+            <b>Last sync:</b> {new Date(latest.started_at).toLocaleString()}<br/>
+            <b>Status:</b> {latest.status}<br/>
+            <b>Animals seen:</b> {latest.animals_seen}<br/>
+            <b>Animals updated:</b> {latest.animals_upserted}
           </p>
           {latest.error_message && <p className="error">{latest.error_message}</p>}
         </div>

@@ -809,6 +809,21 @@ nav button.on {
   margin-top: 2px;
 }
 
+.syncButtonGrid {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .syncButtonGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .syncButtonGrid .full {
+    margin-top: 0;
+  }
+}
+
 @media (min-width: 720px) {
   .animalFilterPanel {
     grid-template-columns: repeat(3, 1fr);
