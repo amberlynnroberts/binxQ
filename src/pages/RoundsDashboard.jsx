@@ -53,10 +53,20 @@ export function RoundsDashboard({ data, alerts = [], setPage, startRound }) {
     <main className="roundsDashboard">
       <section className="roundsWelcome">
         <p>Binx-Q</p>
-        <h1>Good morning! 👋</h1>
+        <h1>
+          {(() => {
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 12) {
+              return 'Good morning! 👋';
+            }
+            if (hour >= 12 && hour < 17) {
+              return 'Good afternoon! ☀️';
+            }
+            return 'Good evening! 🌙';
+          })()}
+        </h1>
         <small>Here’s what needs your attention today.</small>
       </section>
-
       {needs.length > 0 && (
         <button type="button" className="roundOverdueBanner" onClick={() => setPage('round-select')}>
           <AlertTriangle/>
@@ -66,11 +76,9 @@ export function RoundsDashboard({ data, alerts = [], setPage, startRound }) {
           </span>
         </button>
       )}
-
       <section>
         <h2 className="roundSectionLabel">Start a Round</h2>
         <div className="roundStartList">
- 
  <RoundCard
   icon={ClipboardCheck}
   title="AM Care Round"
