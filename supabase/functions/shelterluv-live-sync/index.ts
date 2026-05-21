@@ -58,7 +58,19 @@ function normalizeShelterluvAnimal(raw: any) {
     color: firstValue(raw.color, raw.Color, primaryColor, ""),
     intake_date: firstValue(raw.intake_date, raw.IntakeDate, raw.intakeDate, unixToDate(raw.LastIntakeUnixTime), null),
     status: firstValue(raw.status, raw.Status, raw.current_status, raw.currentStatus, "In Shelter"),
-    location: firstValue(raw.location, raw.Location, raw.kennel, raw.Kennel, raw.current_location, raw.currentLocation, raw.CurrentLocation?.Tier1, raw.CurrentLocation?.Tier2, null),
+    location: firstValue(
+      raw.CurrentLocation?.Tier1,
+      raw.location,
+      raw.Location,
+      null
+    ),
+
+    kennel: firstValue(
+      raw.CurrentLocation?.Tier2,
+      raw.kennel,
+      raw.Kennel,
+      null
+    ),    
     photo_url: normalizePhoto(raw),
     primary_breed: primaryBreed || null,
     secondary_breed: firstValue(raw.secondary_breed, raw.SecondaryBreed, raw.secondaryBreed, null),

@@ -5,6 +5,13 @@ import { Empty, kennelShort } from '../components/ui';
 export function Meds({ data, select }) {
   return (
     <main>
+      <div className="roundsTop">
+        <button type="button" className="roundsClose" onClick={() => window.history.back()}>
+          <ArrowLeft size={20}/>
+        </button>
+        <h1>Medications</h1>
+        <span/>
+      </div>
       <h1>Meds Due</h1>
       <div className="list">
         {data.meds.length === 0 && <Empty text="No active meds due." />}

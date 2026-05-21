@@ -514,12 +514,14 @@ code {
 }
 
 .animalPhotoLarge {
-  width: 100%;
-  max-height: 320px;
+  max-height: 350px;
   object-fit: cover;
   border-radius: 22px;
   border: 1px solid var(--border);
   margin: 8px 0 14px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .photoPlaceholder {
@@ -814,6 +816,195 @@ nav button.on {
   gap: 10px;
 }
 
+.careControls {
+  display: grid;
+  gap: 14px;
+}
+
+.careControls label {
+  display: grid;
+  gap: 7px;
+  font-weight: 800;
+}
+
+.careControls input,
+.inlineNote {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  color: var(--text);
+  min-height: 46px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.careControls input:focus,
+.inlineNote:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.shiftToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.careStats {
+  margin: 12px 0;
+}
+
+.careList {
+  display: grid;
+  gap: 12px;
+}
+
+.careCard {
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.careCard.done {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success-soft) 60%, var(--card-bg));
+}
+
+.careCard h3 {
+  margin: 0;
+}
+
+.careCard p {
+  margin: 3px 0;
+}
+
+.careCard small {
+  display: block;
+  color: var(--muted);
+}
+
+.careMain {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.checkButton {
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  background: var(--soft);
+  color: var(--muted);
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkButton.done {
+  background: var(--success);
+  color: white;
+  border-color: var(--success);
+}
+
+.medGroup {
+  gap: 10px;
+}
+
+.medSignoffRow {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.medSignoffRow.done {
+  background: color-mix(in srgb, var(--success-soft) 40%, transparent);
+  border-radius: 14px;
+  padding: 10px;
+  border: 1px solid var(--success);
+}
+
+.medSignoffInfo {
+  display: grid;
+  gap: 4px;
+}
+
+.medSignoffInfo b {
+  display: block;
+}
+
+@media (min-width: 720px) {
+  .careControls {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+  }
+
+  .careControls .success,
+  .careControls .error {
+    grid-column: 1 / -1;
+  }
+}
+
+.careActionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100%;
+  min-height: 48px;
+
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+/* KennelCheck One-Tap Rounds Redesign */
+
+:root {
+  --round-bg:#020812;--round-card:#0d1724;--round-line:rgba(148,163,184,.18);--round-text:#f8fafc;--round-muted:#98a5b8;
+  --round-green:#39d353;--round-green-soft:rgba(57,211,83,.16);--round-blue:#3b82f6;--round-blue-soft:rgba(59,130,246,.18);
+  --round-purple:#a855f7;--round-purple-soft:rgba(168,85,247,.18);--round-red:#ff4d4f;--round-orange:#f59e0b;
+}
+body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparent 25%),linear-gradient(180deg,#020812,#020617);color:var(--round-text)}
+.roundsApp{min-height:100vh;background:radial-gradient(circle at top right,rgba(57,211,83,.09),transparent 28%),var(--round-bg);color:var(--round-text);max-width:1180px;margin:0 auto;padding-bottom:82px}
+.roundsViewport{min-height:calc(100vh - 82px)}
+.roundsDashboard{padding:18px;display:grid;gap:18px}
+.roundsWelcome{padding:12px 0 0}.roundsWelcome p{margin:0;color:var(--round-green);font-weight:950;font-size:18px}.roundsWelcome h1{margin:26px 0 4px;font-size:clamp(28px,5vw,42px);letter-spacing:-.06em}.roundsWelcome small{color:var(--round-muted)}
+.roundOverdueBanner{width:100%;border:1px solid rgba(255,77,79,.55);background:linear-gradient(90deg,rgba(255,77,79,.22),rgba(255,77,79,.08));color:#ff9b9c;border-radius:16px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:12px;text-align:left;align-items:center}.roundOverdueBanner svg{color:var(--round-red)}.roundOverdueBanner b,.roundOverdueBanner small{display:block}.roundOverdueBanner small{color:#ffb4b5}
+.roundSectionLabel{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--round-text)}
+.roundStartList{display:grid;gap:12px}
+.roundStartCard,.roundChoice{width:100%;border:1px solid var(--round-line);border-radius:18px;padding:15px;color:var(--round-text);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;text-align:left}
+.roundStartCard.green,.roundChoice.green{background:linear-gradient(135deg,rgba(57,211,83,.26),rgba(57,211,83,.08));border-color:rgba(57,211,83,.42)}
+.roundStartCard.blue,.roundChoice.blue{background:linear-gradient(135deg,rgba(59,130,246,.24),rgba(59,130,246,.08));border-color:rgba(59,130,246,.4)}
+.roundStartCard.purple,.roundChoice.purple{background:linear-gradient(135deg,rgba(168,85,247,.24),rgba(168,85,247,.08));border-color:rgba(168,85,247,.4)}
+.roundStartIcon,.roundChoiceIcon{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
+.roundStartCard b,.roundStartCard small,.roundChoice b,.roundChoice small{display:block}.roundStartCard small,.roundChoice small{color:var(--round-muted);margin-top:2px}
+.roundGlancePanel,.roundNeedsPanel,.roundInfoCard,.roundTip{border:1px solid var(--round-line);background:rgba(13,23,36,.92);border-radius:18px;padding:16px}
+.roundGlanceGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.roundGlance{min-height:78px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid var(--round-line);display:grid;place-content:center;text-align:center}.roundGlance b{font-size:24px}.roundGlance span{color:var(--round-muted);font-size:12px}.roundGlance.green b{color:var(--round-green)}.roundGlance.blue b{color:var(--round-blue)}.roundGlance.red b{color:var(--round-red)}
+.roundNeedsList{display:grid;gap:10px}.roundNeedsList button{border:0;background:transparent;color:var(--round-text);display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left}.roundNeedsList svg{color:var(--round-orange)}.roundNeedsList b,.roundNeedsList small{display:block}.roundNeedsList small{color:var(--round-muted)}.roundNeedsList em{border-radius:999px;padding:5px 9px;background:rgba(245,158,11,.14);color:var(--round-orange);font-size:12px;font-style:normal;font-weight:900}
+.roundsScreen{min-height:calc(100vh - 82px);padding:18px;display:grid;align-content:start;gap:16px}.roundsScreen.small{max-width:420px;margin:0 auto}
+.roundsTop{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;text-align:center}.roundsTop h1{margin:0;font-size:18px}.roundsClose{width:38px;height:38px;border:0;color:var(--round-text);background:transparent;display:grid;place-items:center}
+.roundProgressBlock{display:grid;gap:8px}.roundProgressTrack{height:7px;border-radius:999px;background:#172233;overflow:hidden}.roundProgressTrack span{display:block;height:100%;background:var(--round-green)}.roundProgressMeta{display:flex;justify-content:space-between;color:var(--round-muted)}
+.roundAnimalHero{position:relative;border-radius:18px;overflow:hidden;min-height:168px;background:var(--round-card)}.roundAnimalPhoto{height:15%;background:#111827;display:grid;place-items:center;font-size:80px}.roundAnimalPhoto img{width:100%;height:100%;object-fit:cover}.roundAnimalHero:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.4),transparent 45%,rgba(0,0,0,.62));pointer-events:none}.roundKennelTag{position:absolute;top:14px;left:14px;z-index:2;background:rgba(0,0,0,.62);border-radius:10px;padding:8px 10px}.roundKennelTag b,.roundKennelTag small{display:block}.roundKennelTag small{color:var(--round-muted)}.roundAnimalName{position:absolute;z-index:2;right:14px;bottom:18px;text-align:right}.roundAnimalName h2{margin:0;font-size:27px}.roundAnimalName small{color:var(--round-muted)}
+.roundCheckGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.roundCheckGrid div{border-radius:14px;border:1px solid var(--round-line);background:var(--round-card);min-height:74px;display:grid;place-items:center;color:var(--round-green);font-weight:900}.roundCheckGrid svg{width:28px;height:28px}.roundCheckGrid span{color:var(--round-text);font-size:13px}
+.roundMedicationCard{border:1px solid var(--round-line);background:var(--round-card);border-radius:16px;padding:14px;display:flex;justify-content:space-between;gap:14px}.roundMedicationCard h2,.roundMedicationCard p{margin:0}.roundMedicationCard small{color:var(--round-muted)}.roundMedicationCard em{align-self:center;color:#ff795f;background:rgba(255,77,79,.12);border:1px solid rgba(255,77,79,.35);border-radius:999px;padding:6px 9px;font-size:12px;font-style:normal;font-weight:950}
+.roundInput{border:1px solid var(--round-line);border-radius:14px;min-height:50px;background:var(--round-card);display:flex;align-items:center;gap:10px;padding:0 13px;color:var(--round-muted)}.roundInput input{flex:1;border:0;outline:0;color:var(--round-text);background:transparent}
+.roundPrimary,.roundSecondary{min-height:58px;border:0;border-radius:14px;font-size:16px;font-weight:950;color:white}.roundPrimary{background:linear-gradient(135deg,#39d353,#2ea043)}.roundPrimary.blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.roundSecondary{background:var(--round-card);border:1px solid var(--round-line);color:var(--round-text)}.roundTwoButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.roundSkip{border:0;background:transparent;color:var(--round-muted)}
+.roundComplete{min-height:calc(100vh - 120px);display:grid;align-content:center;gap:22px;text-align:center}.roundConfetti{width:108px;height:108px;margin:0 auto;border-radius:999px;background:var(--round-green-soft);border:8px solid rgba(57,211,83,.32);color:var(--round-green);display:grid;place-items:center;font-size:54px;font-weight:950}.roundComplete.blue .roundConfetti{background:var(--round-blue-soft);border-color:rgba(59,130,246,.36);color:var(--round-blue)}.roundComplete h1{margin:0;font-size:29px}.roundSummaryGrid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--round-line);border-radius:16px;overflow:hidden}.roundSummaryGrid span{min-height:72px;display:grid;place-content:center;border-right:1px solid var(--round-line)}.roundSummaryGrid span:last-child{border-right:0}.roundSummaryGrid b{font-size:24px}.roundSummaryGrid small{color:var(--round-muted)}
+.roundInfoCard h2{margin:0 0 10px}.roundInfoCard li{margin:7px 0;color:var(--round-muted)}.roundTip{display:flex;gap:10px;align-items:center;color:var(--round-muted)}.roundTip svg{color:var(--round-green)}
+.roundsBottomNav{position:fixed;z-index:50;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:1180px;height:78px;background:rgba(2,8,18,.96);backdrop-filter:blur(16px);border-top:1px solid var(--round-line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px 10px}.roundsBottomNav button{border:0;border-radius:16px;color:var(--round-muted);background:transparent;display:grid;place-items:center;gap:2px;font-size:11px}.roundsBottomNav button.active{color:var(--round-green);background:var(--round-green-soft)}.roundsFab{position:absolute;left:50%;top:-25px;transform:translateX(-50%);width:58px;height:58px;border-radius:999px!important;background:linear-gradient(135deg,#39d353,#2ea043)!important;color:white!important;box-shadow:0 14px 35px rgba(57,211,83,.32)}
+@media (min-width:760px){.roundsDashboard{grid-template-columns:1fr 360px;align-items:start}.roundsWelcome,.roundOverdueBanner,.roundStartList{grid-column:1}.roundGlancePanel,.roundNeedsPanel{grid-column:2}.roundGlancePanel{grid-row:1 / span 2;margin-top:82px}.roundNeedsPanel{grid-row:3 / span 2}}
+@media (max-width:420px){.roundGlanceGrid{grid-template-columns:repeat(2,1fr)}}
+
+
 @media (min-width: 720px) {
   .syncButtonGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -829,8 +1020,6 @@ nav button.on {
     grid-template-columns: repeat(3, 1fr);
   }
 }
-
-
 
 @media (min-width: 720px) {
   .formRow.two {

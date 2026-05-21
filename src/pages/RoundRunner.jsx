@@ -1,0 +1,190 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X } from 'lucide-react';
+import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, completeMedicationRoundItem, loadRoundSignoffs} from '../lib/roundsApi';
+import { todayDateString } from '../lib/dailyCareApi';
+import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
+
+function ProgressBar({ current, total }) {
+  const [kennelDraft, setKennelDraft] = useState('');
+  const pct = total ? Math.round((current / total) * 100) : 0;
+  return (
+    <div className="roundProgressBlock">
+      <div className="roundProgressTrack"><span style={{ width: `${pct}%` }}/></div>
+      <div className="roundProgressMeta"><small>{current} of {total}</small><small>{pct}% complete</small></div>
+    </div>
+  );
+}
+
+function AnimalHero({ animal }) {
+  return (
+    <section className="roundAnimalHero">
+      <div className="roundKennelTag"><b>{animal.kennel || 'Room'}</b><small>Kennel</small></div>
+      <div className="roundAnimalPhoto">
+        {animal.photo && String(animal.photo).startsWith('http') ? <img src={animal.photo} alt={animal.name}/> : <span>{animal.photo || '🐱'}</span>}
+      </div>
+      <div className="roundAnimalName">
+        <h2>{animal.name}</h2>
+        <small>{animal.shelterluv_id || animal.id} · {animal.sex || 'Unknown'} · {animal.age || 'Age unknown'}</small>
+      </div>
+    </section>
+  );
+}
+
+export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundSummary }) {
+  const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
+  const [index, setIndex] = useState(0);
+  const [signedBy, setSignedBy] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [skipped, setSkipped] = useState(0);
+
+  const [kennelDraft, setKennelDraft] = useState('');
+  
+  const animals = data?.animals || [];
+  const meds = data?.meds || [];
+
+  async function load() {
+    const rows = await loadRoundSignoffs(shift, todayDateString());
+    setSignoffs(rows);
+  }
+
+  useEffect(() => {
+    load().catch(console.error);
+  }, [shift]);
+
+  const allItems = useMemo(() => {
+    return roundType === 'med'
+      ? buildMedicationRoundItems(animals, meds, signoffs.medication, shift)
+      : buildCareRoundItems(animals, signoffs.cleaning, shift);
+  }, [roundType, animals, meds, signoffs, shift]);
+
+  const items = allItems.filter(item => !item.done);
+  const total = allItems.length || items.length;
+  const item = items[index] || items[0];
+  const completed = Math.max(0, total - items.length);
+  const isDone = !item;
+
+  function saveName() {
+    const name = signedBy.trim();
+    if (!name) return false;
+    localStorage.setItem('kennelcheck_signed_by', name);
+    return true;
+  }
+
+  useEffect(() => {
+  setKennelDraft(item?.animal?.kennel || '');
+}, [item?.animal?.id]);
+
+  async function completeAndNext() {
+    if (!item || !saveName()) return;
+    try {
+      setBusy(true);
+      if (roundType === 'med') await completeMedicationRoundItem({ item, givenBy: signedBy, notes: note });
+      else await completeCareRoundItem({ item, signedBy, notes: note });
+      setNote('');
+      await load();
+      await reload?.();
+      setIndex(0);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveKennelNumber() {
+  if (!item?.animal) return;
+
+  const nextKennel = kennelDraft.trim();
+
+  if (!nextKennel || nextKennel === item.animal.kennel) return;
+
+  await updateAnimalKennelNumber({
+    animalId: item.animal.id,
+    shelterluvId: item.animal.shelterluv_id,
+    kennelNumber: nextKennel
+  });
+
+  await reload?.();
+}
+
+  function skip() {
+    setSkipped(prev => prev + 1);
+    setIndex(prev => Math.min(prev + 1, Math.max(items.length - 1, 0)));
+  }
+
+  if (isDone) {
+    return (
+      <main className="roundsScreen small">
+        <section className={roundType === 'med' ? 'roundComplete blue' : 'roundComplete'}>
+          <div className="roundConfetti">✓</div>
+          <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`} Complete!</h1>
+          <div className="roundSummaryGrid">
+            <span><b>{completed}</b><small>{roundType === 'med' ? 'Given' : 'Completed'}</small></span>
+            <span><b>{skipped}</b><small>Skipped</small></span>
+            <span><b>0</b><small>Remaining</small></span>
+          </div>
+          <button
+            type="button"
+            className="roundSecondary"
+            onClick={() => {
+              setRoundSummary({
+                completed,
+                skipped,
+                roundType,
+                shift
+              });
+
+              setPage('round-summary');
+            }}>View Summary</button>
+          <button type="button" className="roundPrimary" onClick={() => setPage('dashboard')}>Back to Dashboard</button>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="roundsScreen small">
+      <div className="roundsTop">
+        <button type="button" className="roundsClose" onClick={() => setPage('round-select')}><X size={20}/></button>
+        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
+        <span/>
+      </div>
+
+      <ProgressBar current={completed + 1} total={total || items.length}/>
+      <AnimalHero animal={item.animal}/>
+        <label className="roundInput">
+          <span className="roundInputLabel">Kennel</span>
+          <input
+            value={kennelDraft}
+            onChange={e => setKennelDraft(e.target.value)}
+            placeholder="Kennel number"
+          />
+        </label>
+      {roundType === 'care' ? (
+        <section className="roundCheckGrid">
+          <div><CheckCircle2/><span>Cleaned</span></div>
+          <div><Droplets/><span>Water</span></div>
+          <div><Utensils/><span>Fed</span></div>
+        </section>
+      ) : (
+        <section className="roundMedicationCard">
+          <div><h2>{item.med.name}</h2><p>{item.med.dose || 'No dosage instructions'}</p><small>{item.med.schedule || 'No schedule'}</small></div>
+          <em>DUE NOW</em>
+        </section>
+      )}
+
+      <label className="roundInput"><ClipboardList size={17}/><input value={note} onChange={e => setNote(e.target.value)} placeholder="Add note (optional)"/></label>
+      <label className="roundInput"><CheckCircle2 size={17}/><input value={signedBy} onChange={e => setSignedBy(e.target.value)} placeholder="Your initials"/></label>
+
+      {roundType === 'med' ? (
+        <div className="roundTwoButtons">
+          <button type="button" className="roundSecondary" onClick={skip}>Not Given</button>
+          <button type="button" className="roundPrimary blue" disabled={busy} onClick={completeAndNext}>Given</button>
+        </div>
+      ) : (
+        <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
+      )}
+
+      <button type="button" className="roundSkip" onClick={skip}>Swipe left to skip</button>
+    </main>
+  );
+}

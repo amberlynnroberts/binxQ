@@ -43,8 +43,8 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
       return {
         id: row.id,
         shelterluv_id: row.shelterluv_id,
-        kennel: row.kennel_number || 'Unassigned',
-        location: s?.location || row.kennel_number || '',
+        kennel: row.kennel_number || '?',
+        location: s?.location || '',
         name: s?.name || 'Unknown',
         desc: [s?.color, s?.species].filter(Boolean).join(' ') || 'Unknown',
         species: s?.species || 'Cat',

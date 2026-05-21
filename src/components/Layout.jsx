@@ -29,6 +29,7 @@ export function Layout({ children, page, setPage, reload, theme, toggleTheme, db
         <button className={page === 'dashboard' ? 'on' : ''} onClick={() => setPage('dashboard')}><Home size={18}/>Dashboard</button>
         <button className={['kennels','card','add','edit'].includes(page) ? 'on' : ''} onClick={() => setPage('kennels')}><Grid3X3 size={18}/>Kennels</button>
         <button className={page === 'meds' ? 'on' : ''} onClick={() => setPage('meds')}><Pill size={18}/>Meds</button>
+        <button onClick={() => setPage('daily-care')}>Daily Care</button>
         <button className={page === 'shift' ? 'on' : ''} onClick={() => setPage('shift')}><ClipboardCheck size={18}/>Shift</button>
         <button className={page === 'more' ? 'on' : ''} onClick={() => setPage('more')}><MoreHorizontal size={18}/>More</button>
       </nav>

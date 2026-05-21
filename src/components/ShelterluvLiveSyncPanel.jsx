@@ -52,7 +52,7 @@ export function ShelterluvLiveSyncPanel({ reload }) {
   return (
     <section className="panel">
       <h2><PlugZap size={18}/> Shelterluv Live Sync</h2>
-      <p>Pull animal data from Shelterluv into KennelCheck.</p>
+      <p>Pull animal data from Shelterluv into Binx-Q.</p>
 
       <div className="syncButtonGrid">
         <button className="primary full" type="button" onClick={() => runSync('quarantine')} disabled={!!busyMode}>

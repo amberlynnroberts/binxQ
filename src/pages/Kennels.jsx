@@ -3,6 +3,10 @@ import { ChevronRight, Plus, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
+import { useEffect, useState } from 'react';
+import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
+import { animalHasEndOfDayCleaningWarning, todayDateString } from '../lib/careTaskRules';
+
 
 export function Kennels({
   data,
@@ -22,8 +26,20 @@ export function Kennels({
       .includes(query.toLowerCase())
   );
 
+  const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
+    useEffect(() => {
+      fetchCleaningSignoffsForDate(todayDateString())
+        .then(setCleaningSignoffs)
+        .catch(console.error);
+    }, [data.animals.length]);
+
   function FilterButton({ value, label, count }) {
     const active = animalView === value;
+
+    const hasCleaningWarning = animalHasEndOfDayCleaningWarning({
+      animalId: active.id,
+      cleaningSignoffs
+    });
 
     return (
       <button
@@ -39,6 +55,13 @@ export function Kennels({
 
   return (
     <main>
+      <div className="roundsTop">
+        <button type="button" className="roundsClose" onClick={() => window.history.back()}>
+          <ArrowLeft size={20}/>
+        </button>
+        <h1>Kennels</h1>
+        <span/>
+      </div>
       <div className="title">
         <h1>Animals</h1>
         <button className="primary" onClick={add}><Plus size={18}/> Add</button>
@@ -81,7 +104,9 @@ export function Kennels({
             <span className={'kennel ' + String(a.status).toLowerCase()}>{kennelShort(a.kennel)}</span>
             <AnimalThumb animal={a}/>
             <span>
-              <b>{a.name}</b>
+              <b>
+                {a.name}
+              </b>
               <small>{a.desc} • {a.sex} • {a.age}</small>
               {a.shelterluv_status && <small>Shelterluv: {a.shelterluv_status}</small>}
             </span>
