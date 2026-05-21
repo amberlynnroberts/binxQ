@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AnimalForm, defaultAnimalForm } from './components/AnimalForm';
 import { createQuarantineAnimal, updateQuarantineAnimal } from './lib/api';
 import { useKennelData } from './hooks/useKennelData';
-
+import { Reports } from './pages/Reports';
 import { Kennels } from './pages/Kennels';
 import { AnimalCard } from './pages/AnimalCard';
 import { Meds } from './pages/Meds';
@@ -10,7 +10,6 @@ import { Shift } from './pages/Shift';
 import { More } from './pages/More';
 import { TextAlert } from './pages/TextAlert';
 import { DailyCare } from './pages/DailyCare';
-
 import { filterAnimalsByView } from './lib/animalFilters';
 import { RoundsShell } from './components/RoundsShell';
 import { RoundsDashboard } from './pages/RoundsDashboard';
@@ -196,6 +195,10 @@ export default function App() {
           shift={roundSummary.shift}
           setPage={setPage}
         />
+      )}
+      
+      {page === 'reports' && (
+        <Reports />
       )}
 
       {page === 'text-alert' && <TextAlert />}

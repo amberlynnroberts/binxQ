@@ -1004,6 +1004,157 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 @media (min-width:760px){.roundsDashboard{grid-template-columns:1fr 360px;align-items:start}.roundsWelcome,.roundOverdueBanner,.roundStartList{grid-column:1}.roundGlancePanel,.roundNeedsPanel{grid-column:2}.roundGlancePanel{grid-row:1 / span 2;margin-top:82px}.roundNeedsPanel{grid-row:3 / span 2}}
 @media (max-width:420px){.roundGlanceGrid{grid-template-columns:repeat(2,1fr)}}
 
+.globalLowStockButton {
+  position: fixed;
+  right: 16px;
+  bottom: 92px;
+  z-index: 80;
+  border: 0;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #111827;
+  font-weight: 950;
+  padding: 13px 18px;
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.3);
+}
+.reportHeader {
+  border: 1px solid var(--round-line);
+  background: linear-gradient(135deg, rgba(57, 211, 83, 0.18), rgba(13, 23, 36, 0.92));
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reportHeader p,
+.reportHeader h1,
+.reportHeader small {
+  margin: 0;
+}
+
+.reportHeader p {
+  color: var(--round-green);
+  font-weight: 950;
+}
+
+.reportHeader h1 {
+  margin-top: 5px;
+}
+
+.reportHeader small {
+  color: var(--round-muted);
+  display: block;
+  margin-top: 7px;
+}
+
+.reportControls {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.92);
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.reportControls label {
+  display: grid;
+  gap: 6px;
+  font-weight: 900;
+  color: var(--round-muted);
+}
+
+.reportControls input {
+  min-height: 48px;
+  border: 1px solid var(--round-line);
+  background: var(--round-card);
+  color: var(--round-text);
+  border-radius: 14px;
+  padding: 0 12px;
+}
+
+.reportControls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reportStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.reportStats div {
+  border: 1px solid var(--round-line);
+  background: var(--round-card);
+  border-radius: 16px;
+  padding: 13px;
+  text-align: center;
+}
+
+.reportStats b,
+.reportStats small {
+  display: block;
+}
+
+.reportStats b {
+  color: var(--round-green);
+  font-size: 24px;
+}
+
+.reportStats small {
+  color: var(--round-muted);
+  font-size: 12px;
+}
+
+.reportPanel {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.92);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.reportPanel h2 {
+  margin: 0 0 12px;
+}
+
+.reportEmpty {
+  color: var(--round-muted);
+}
+
+.reportTableWrap {
+  overflow-x: auto;
+}
+
+.reportTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reportTable th,
+.reportTable td {
+  border-bottom: 1px solid var(--round-line);
+  padding: 10px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.reportTable th {
+  color: var(--round-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 760px) {
+  .reportControls {
+    grid-template-columns: 1fr 1fr auto auto;
+    align-items: end;
+  }
+}
 
 @media (min-width: 720px) {
   .syncButtonGrid {

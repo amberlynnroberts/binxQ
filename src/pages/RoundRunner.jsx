@@ -3,6 +3,7 @@ import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X } from 'lucide
 import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, completeMedicationRoundItem, loadRoundSignoffs} from '../lib/roundsApi';
 import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
+import { signOffQuarantinePaper } from '../lib/reportsApi';
 
 function ProgressBar({ current, total }) {
   const [kennelDraft, setKennelDraft] = useState('');
@@ -75,6 +76,19 @@ export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundS
   setKennelDraft(item?.animal?.kennel || '');
 }, [item?.animal?.id]);
 
+async function markPaperDone() {
+  if (!item?.animal || !saveName()) return;
+
+  await signOffQuarantinePaper({
+    animalId: item.animal.id,
+    careDate: todayDateString(),
+    checkedBy: signedBy,
+    notes: 'Paper checklist completed'
+  });
+
+  await reload?.();
+}
+
   async function completeAndNext() {
     if (!item || !saveName()) return;
     try {
@@ -89,6 +103,7 @@ export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundS
       setBusy(false);
     }
   }
+
 
   async function saveKennelNumber() {
   if (!item?.animal) return;
@@ -183,6 +198,9 @@ export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundS
       ) : (
         <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
       )}
+      <button type="button" className="roundSecondary" onClick={markPaperDone}>
+        Paper Done
+      </button>
 
       <button type="button" className="roundSkip" onClick={skip}>Swipe left to skip</button>
     </main>

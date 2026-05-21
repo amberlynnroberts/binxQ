@@ -12,7 +12,8 @@ export function RoundsShell({ page, setPage, children }) {
   return (
     <div className="roundsApp">
       <div className="roundsViewport">{children}</div>
-
+        <button type="button" className="globalLowStockButton" onClick={() => setPage('text-alert')} >
+        Low Stock </button>
       <nav className="roundsBottomNav">
         {nav.map(([id, Icon, label], index) => (
           <button
@@ -26,7 +27,7 @@ export function RoundsShell({ page, setPage, children }) {
           </button>
         ))}
 
-        <button type="button" className="roundsFab" onClick={() => setPage('add')} aria-label="Add">
+        <button type="button" className="roundsFab" disabled onClick={() => setPage('add')} aria-label="Add">
           <Plus size={28}/>
         </button>
       </nav>
