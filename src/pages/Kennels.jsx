@@ -1,12 +1,12 @@
 import React from 'react';
-import { ChevronRight, Plus, Search } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Plus, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
 import { useEffect, useState } from 'react';
 import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
 import { animalHasEndOfDayCleaningWarning, todayDateString } from '../lib/careTaskRules';
-
+import { formatAge} from '../lib/formatAge';
 
 export function Kennels({
   data,
@@ -63,7 +63,7 @@ export function Kennels({
         <span/>
       </div>
       <div className="title">
-        <h1>Animals</h1>
+        <h1>Cats</h1>
         <button className="primary" onClick={add}><Plus size={18}/> Add</button>
       </div>
 
@@ -107,10 +107,10 @@ export function Kennels({
               <b>
                 {a.name}
               </b>
-              <small>{a.desc} • {a.sex} • {a.age}</small>
-              {a.shelterluv_status && <small>Shelterluv: {a.shelterluv_status}</small>}
+              <small>{a.desc} • {a.sex} • {formatAge(a.age )}</small>
+              <small> {a.shelterluv_status}</small>
             </span>
-            <em>{a.status}</em>
+            
             <ChevronRight/>
           </button>
         ))}

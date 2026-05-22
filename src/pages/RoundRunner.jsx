@@ -4,6 +4,7 @@ import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, c
 import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
 import { signOffQuarantinePaper } from '../lib/reportsApi';
+import { formatAge } from '../lib/formatAge';
 
 function ProgressBar({ current, total }) {
   const [kennelDraft, setKennelDraft] = useState('');
@@ -25,7 +26,7 @@ function AnimalHero({ animal }) {
       </div>
       <div className="roundAnimalName">
         <h2>{animal.name}</h2>
-        <small>{animal.shelterluv_id || animal.id} · {animal.sex || 'Unknown'} · {animal.age || 'Age unknown'}</small>
+        <small>{animal.shelterluv_id || animal.id} · {animal.sex || 'Unknown'} · {formatAge(animal.age) || 'Age unknown'}</small>
       </div>
     </section>
   );

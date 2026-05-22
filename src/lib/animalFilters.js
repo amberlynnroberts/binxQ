@@ -1,33 +1,41 @@
 export const archivedShelterluvStatuses = [
-  'Transferred Out',
-  'Adopted',
-  'Deceased',
-  'Returned to Owner',
-  'Euthanized'
+  'transferred out',
+  'adopted',
+  'deceased',
+  'returned to owner',
+  'euthanized'
 ];
 
-export function isArchivedAnimal(animal) {
-  const status = animal?.shelterluv_status || animal?.status || '';
-  return archivedShelterluvStatuses.includes(status);
-}
-
-export function isQuarantineAnimal(animal) {
-  const status = String(
+export function getAnimalStatus(animal) {
+  return String(
     animal?.shelterluv_status ||
     animal?.status ||
     ''
-  ).toLowerCase();
+  ).trim().toLowerCase();
+}
 
+export function isArchivedAnimal(animal) {
+  return archivedShelterluvStatuses.includes(getAnimalStatus(animal));
+}
+
+export function isQuarantineAnimal(animal) {
+  const status = getAnimalStatus(animal);
   return status.includes('quarantine');
 }
 
 export function isInRescueAnimal(animal) {
-  return !isArchivedAnimal(animal);
+  const status = String(
+    animal?.shelterluv_status ||
+    animal?.status ||
+    ''
+  ).trim();
+
+  return status === 'Cat Lounge - HBCM - Available';
 }
 
 export function filterAnimalsByView(animals, animalView) {
   if (animalView === 'quarantine') {
-    return animals.filter(animal => isQuarantineAnimal(animal) && !isArchivedAnimal(animal));
+    return animals.filter(a => isQuarantineAnimal(a) && !isArchivedAnimal(a));
   }
 
   if (animalView === 'rescue') {
@@ -43,7 +51,7 @@ export function filterAnimalsByView(animals, animalView) {
 
 export function getAnimalFilterCounts(animals) {
   return {
-    quarantine: animals.filter(animal => isQuarantineAnimal(animal) && !isArchivedAnimal(animal)).length,
+    quarantine: animals.filter(a => isQuarantineAnimal(a) && !isArchivedAnimal(a)).length,
     rescue: animals.filter(isInRescueAnimal).length,
     archived: animals.filter(isArchivedAnimal).length,
     all: animals.length

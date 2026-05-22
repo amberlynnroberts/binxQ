@@ -3,13 +3,15 @@ import { ArrowLeft, Edit3, Save, Trash2 } from 'lucide-react';
 import { addNote, removeFromQuarantine, symptomOptions, toggleSymptom } from '../lib/api';
 import { PhotoUploader } from '../components/AnimalPhoto';
 import { MedicationManager } from '../components/MedicationManager';
+import { formatAge } from '../lib/formatAge';
+import { getDisplayLocation, getDisplayKennel } from '../lib/displayAnimal';
 
 export function AnimalCard({ animal, data, back, reload, edit }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const meds = data.meds.filter(m => m.animalId === animal.id);
   const notes = data.notes.filter(n => n.animalId === animal.id);
-
+console.log(getDisplayLocation(animal.shelterluv_status));
   async function saveNote() {
     if (!note.trim()) return;
     setBusy(true);
@@ -48,9 +50,9 @@ export function AnimalCard({ animal, data, back, reload, edit }) {
 
   return (
     <main>
-      <div className="title">
+      <div style={{padding: '10px'}} className="title">
         <button className="icon" onClick={back}><ArrowLeft/></button>
-        <h1>{animal.kennel}</h1>
+        <h1>{getDisplayLocation(animal)}</h1>
         <button className="link" onClick={edit}><Edit3 size={16}/> Edit</button>
       </div>
 
@@ -58,7 +60,7 @@ export function AnimalCard({ animal, data, back, reload, edit }) {
         <div className="photo">{animal.photo?.startsWith('http') ? <img className="photoThumb largeThumb" src={animal.photo} alt={animal.name}/> : animal.photo}</div>
         <div>
           <h1>{animal.name}</h1>
-          <p>{animal.desc} • {animal.sex} • {animal.age}</p>
+          <p>{animal.desc} • {animal.sex} • {formatAge(animal.age)}</p>
           <b className="badge red">{animal.status}</b>
           <p><b>Intake:</b> {animal.intake || 'Unknown'}</p>
         </div>

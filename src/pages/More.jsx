@@ -2,7 +2,7 @@ import React from 'react';
 import { Database } from 'lucide-react';
 import { ShelterluvLiveSyncPanel } from '../components/ShelterluvLiveSyncPanel';
 
-export function More({ reload, dbStatus }) {
+export function More({ reload, dbStatus, setDbStatus, setPage }) {
   return (
     <main>
       <h1>More</h1>

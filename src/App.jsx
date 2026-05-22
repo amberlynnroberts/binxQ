@@ -88,7 +88,7 @@ export default function App() {
     : defaultAnimalForm();
 
   return (
-    <RoundsShell page={page} setPage={setPage}>
+    <RoundsShell page={page} setPage={setPage} animalView={animalView} setAnimalView={setAnimalView}>
       {page === 'dashboard' && (
         <RoundsDashboard
           data={visibleData}
