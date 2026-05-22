@@ -39,7 +39,7 @@ import {
         <Stat n={data.meds.length} t="Meds due" kind="red"/>
       </section>
 
-      <div className="title">
+      {/* <div className="title">
         <h2>Needs Attention</h2>
         <button className="primary" onClick={() => setPage('add')}><Plus size={16}/> Add Cat</button>
       </div>
@@ -68,7 +68,7 @@ import {
             </span>
           </button>
         ))}
-      </div>
+      </div> */}
     </main>
   );
 }

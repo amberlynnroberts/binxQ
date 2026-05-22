@@ -16,17 +16,43 @@ export function isCleaningDueNow(shift, hour = currentHour()) {
   return false;
 }
 
+export function buildCleaningSignoffMaps(cleaningSignoffs = []) {
+  const today = todayDateString();
+  const map = new Map();
+
+  for (const row of cleaningSignoffs) {
+    if (row.care_date !== today) continue;
+    map.set(`${row.animal_id}:${row.shift}`, row);
+  }
+
+  return map;
+}
+
 export function shouldShowEndOfDayWarning(hour = currentHour()) {
   return hour >= END_OF_DAY_HOUR;
 }
 
-export function buildCleaningSignoffMaps(cleaningSignoffs = []) {
-  const map = new Map();
-  for (const row of cleaningSignoffs) map.set(`${row.animal_id}:${row.shift}`, row);
-  return map;
+export function animalHasEndOfDayCleaningWarning({
+  animalId,
+  cleaningSignoffs = [],
+  hour = currentHour()
+}) {
+  if (!shouldShowEndOfDayWarning(hour)) return false;
+
+  const signoffMap = buildCleaningSignoffMaps(cleaningSignoffs);
+
+  return (
+    !signoffMap.has(`${animalId}:AM`) ||
+    !signoffMap.has(`${animalId}:PM`)
+  );
 }
 
-export function getMissingCleaningTasks({ animals = [], cleaningSignoffs = [], hour = currentHour(), includeFuture = false }) {
+export function getMissingCleaningTasks({
+  animals = [],
+  cleaningSignoffs = [],
+  hour = currentHour(),
+  includeFuture = false
+}) {
   const signoffMap = buildCleaningSignoffMaps(cleaningSignoffs);
   const tasks = [];
 
@@ -58,10 +84,4 @@ export function getMissingCleaningTasks({ animals = [], cleaningSignoffs = [], h
   }
 
   return tasks;
-}
-
-export function animalHasEndOfDayCleaningWarning({ animalId, cleaningSignoffs = [], hour = currentHour() }) {
-  if (!shouldShowEndOfDayWarning(hour)) return false;
-  const signoffMap = buildCleaningSignoffMaps(cleaningSignoffs);
-  return !signoffMap.has(`${animalId}:AM`) || !signoffMap.has(`${animalId}:PM`);
 }

@@ -16,6 +16,7 @@ import { RoundsDashboard } from './pages/RoundsDashboard';
 import { RoundSelect } from './pages/RoundSelect';
 import { RoundRunner } from './pages/RoundRunner';
 import { RoundSummary } from './pages/RoundSummary';
+import { QuarantineChecklist } from './pages/QuarantineChecklist';
 
 export default function App() {
   const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -96,6 +97,10 @@ export default function App() {
           setPage={setPage}
           startRound={startRound}
         />
+      )}
+
+      {page === 'quarantine-checklist' && (
+        <QuarantineChecklist setPage={setPage} />
       )}
 
       {page === 'round-select' && (
