@@ -68,7 +68,7 @@ console.log(getDisplayLocation(animal.shelterluv_status));
 
       <PhotoUploader animal={animal} reload={reload}/>
 
-      <section className="panel">
+      {/* <section className="panel">
         <h2>Symptoms</h2>
         <div className="checks">
           {symptomOptions.map(s => (
@@ -78,7 +78,7 @@ console.log(getDisplayLocation(animal.shelterluv_status));
             </label>
           ))}
         </div>
-      </section>
+      </section> */}
 
       <section className="panel pink">
         <h2>Meds</h2>

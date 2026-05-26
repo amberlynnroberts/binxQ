@@ -139,7 +139,6 @@ begin
     now()
   from shelterluv_animals s
   on conflict (shelterluv_id) do update set
-    kennel_number = excluded.kennel_number,
     local_status = case
       when animals.local_status = 'Removed' then animals.local_status
       else excluded.local_status

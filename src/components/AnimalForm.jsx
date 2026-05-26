@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { formatAge } from '../lib/formatAge';
 
 export function defaultAnimalForm() {
   return {
@@ -46,8 +47,7 @@ export function AnimalForm({ title, initialForm, submitText, onSubmit, onCancel 
 
         <label>Name<input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Gorilla" /></label>
         <label>Color / Description<input value={form.color} onChange={e => set('color', e.target.value)} placeholder="Black DSH" /></label>
-        <label>Age<input value={form.age} onChange={e => set('age', e.target.value)} placeholder="8 weeks" /></label>
-
+        <label>Age (Months)<input type="number" value={form.age} onChange={e => setForm(prev => ({ ...prev, age: e.target.value}))}/><small className="fieldPreview">{formatAge(form.age)}</small></label>
         <label>Sex
           <select value={form.sex} onChange={e => set('sex', e.target.value)}>
             <option>Unknown</option><option>Female</option><option>Male</option>

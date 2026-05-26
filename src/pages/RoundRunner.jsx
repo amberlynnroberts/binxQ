@@ -20,7 +20,7 @@ function ProgressBar({ current, total }) {
 function AnimalHero({ animal }) {
   return (
     <section className="roundAnimalHero">
-      <div className="roundKennelTag"><b>{animal.kennel || 'Room'}</b><small>Kennel</small></div>
+      <div className="roundKennelTag"><b>{animal.kennel || 'Room'}</b></div>
       <div className="roundAnimalPhoto">
         {animal.photo && String(animal.photo).startsWith('http') ? <img src={animal.photo} alt={animal.name}/> : <span>{animal.photo || '🐱'}</span>}
       </div>

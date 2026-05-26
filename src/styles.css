@@ -1431,6 +1431,177 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   gap: 10px;
 }
 
+.kennel {
+  padding: 7px 12px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+
+  min-width: 44px;
+  text-align: center;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(8px);
+}
+
+/* Softer colors */
+
+.kennel.kennelRed {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #fca5a5 !important;
+}
+
+.kennel.kennelBlue {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+}
+
+.kennel.kennelGreen {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+}
+
+.kennel.kennelPurple {
+  background: rgba(168, 85, 247, 0.18) !important;
+  color: #d8b4fe !important;
+}
+
+.kennel.kennelOrange {
+  background: rgba(249, 115, 22, 0.18) !important;
+  color: #fdba74 !important;
+}
+
+.kennel.kennelPink {
+  background: rgba(236, 72, 153, 0.18) !important;
+  color: #f9a8d4 !important;
+}
+
+.kennel.kennelTeal {
+  background: rgba(20, 184, 166, 0.18) !important;
+  color: #99f6e4 !important;
+}
+
+.kennel.kennelYellow {
+  background: rgba(234, 179, 8, 0.18) !important;
+  color: #fde68a !important;
+}
+
+.kennel.kennelDefault {
+  background: rgba(107, 114, 128, 0.18) !important;
+  color: #d1d5db !important;
+}
+
+.roundStartCard.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
+.roundStartCard.disabled .roundStartIcon {
+  color: var(--round-muted);
+}
+
+.actionCardButton {
+  width: 100%;
+
+  min-height: 72px;
+
+  border: 0;
+  border-radius: 24px;
+
+  padding: 18px 22px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(30,41,59,0.92),
+      rgba(15,23,42,0.96)
+    );
+
+  color: white;
+
+  font-size: 16px;
+  font-weight: 900;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 16px 40px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.actionCardButton:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(59,130,246,0.35);
+
+  box-shadow:
+    0 24px 52px rgba(59,130,246,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.actionCardButton:active {
+  transform: scale(0.985);
+}
+
+.syncToast {
+  position: fixed;
+
+  left: 50%;
+  bottom: 110px;
+
+  transform: translateX(-50%);
+
+  padding: 14px 18px;
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(34,197,94,0.96),
+      rgba(22,163,74,0.96)
+    );
+
+  color: white;
+
+  font-size: 14px;
+  font-weight: 900;
+
+  z-index: 999;
+
+  box-shadow:
+    0 18px 40px rgba(34,197,94,0.35);
+
+  animation: toastSlideUp 0.22s ease;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 @media (max-width: 760px) {
   .cleanRoundGrid {
     grid-template-columns: 1fr;

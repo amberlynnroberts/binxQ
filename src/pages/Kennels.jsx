@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
 import { animalHasEndOfDayCleaningWarning, todayDateString } from '../lib/careTaskRules';
 import { formatAge} from '../lib/formatAge';
+import { getKennelColorClass} from '../lib/kennelColors.js';
 
 export function Kennels({
   data,
@@ -35,11 +36,6 @@ export function Kennels({
 
   function FilterButton({ value, label, count }) {
     const active = animalView === value;
-
-    const hasCleaningWarning = animalHasEndOfDayCleaningWarning({
-      animalId: active.id,
-      cleaningSignoffs
-    });
 
     return (
       <button
@@ -101,7 +97,11 @@ export function Kennels({
 
         {list.map(a => (
           <button className="row" key={a.id} onClick={() => select(a.id)}>
-            <span className={'kennel ' + String(a.status).toLowerCase()}>{kennelShort(a.kennel)}</span>
+        {animalView === 'quarantine' && (
+          <span className={`kennel ${getKennelColorClass(a.kennel)}`}>
+            {kennelShort(a.kennel)}
+          </span>
+        )}    
             <AnimalThumb animal={a}/>
             <span>
               <b>

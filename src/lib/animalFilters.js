@@ -1,6 +1,7 @@
 export const archivedShelterluvStatuses = [
   'transferred out',
   'adopted',
+  'healthy in home',
   'deceased',
   'returned to owner',
   'euthanized'
@@ -19,17 +20,12 @@ export function isArchivedAnimal(animal) {
 }
 
 export function isQuarantineAnimal(animal) {
-  const status = getAnimalStatus(animal);
+  const status = String(animal?.shelterluv_status || '').toLowerCase();
   return status.includes('quarantine');
 }
 
 export function isInRescueAnimal(animal) {
-  const status = String(
-    animal?.shelterluv_status ||
-    animal?.status ||
-    ''
-  ).trim();
-
+  const status = String(animal?.shelterluv_status || '').trim();
   return status === 'Cat Lounge - HBCM - Available';
 }
 

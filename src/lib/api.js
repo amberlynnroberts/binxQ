@@ -36,31 +36,41 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
     symptomsByAnimal.set(symptom.animal_id, list);
   }
 
-  const animals = (appAnimals || [])
-    .filter(row => includeRemoved || row.local_status !== 'Removed')
-    .map(row => {
-      const s = shelterluvById.get(row.shelterluv_id);
-      return {
-        id: row.id,
-        shelterluv_id: row.shelterluv_id,
-        kennel: row.kennel_number || '?',
-        location: s?.location || '',
-        name: s?.name || 'Unknown',
-        desc: [s?.color, s?.species].filter(Boolean).join(' ') || 'Unknown',
-        species: s?.species || 'Cat',
-        sex: s?.sex || 'Unknown',
-        age: s?.age || '',
-        status: row.local_status || s?.status || 'Monitor',
-        local_status: row.local_status || '',
-        shelterluv_status: s?.status || '',
-        intake: s?.intake_date || '',
-        photo: s?.photo_url || '🐱',
-        symptoms: symptomsByAnimal.get(row.id) || [],
-        last_synced_at: row.last_synced_at,
-        removed_at: row.removed_at,
-        removal_reason: row.removal_reason
-      };
-    })
+const animals = (appAnimals || [])
+  .filter(row => includeRemoved || row.local_status !== 'Removed')
+  .map(row => {
+    const s = shelterluvById.get(row.shelterluv_id);
+
+    const shelterluvStatus = s?.status || '';
+
+    const appStatus =
+      shelterluvStatus.toLowerCase().includes('quarantine')
+        ? 'Quarantine'
+        : shelterluvStatus.toLowerCase().includes('cat lounge')
+          ? 'In Rescue'
+          : row.local_status || shelterluvStatus || 'Monitor';
+
+    return {
+      id: row.id,
+      shelterluv_id: row.shelterluv_id,
+      kennel: row.kennel_number || '?',
+      location: s?.location || '',
+      name: s?.name || 'Unknown',
+      desc: [s?.color, s?.species].filter(Boolean).join(' ') || 'Unknown',
+      species: s?.species || 'Cat',
+      sex: s?.sex || 'Unknown',
+      age: s?.age || '',
+      status: appStatus,
+      local_status: row.local_status || '',
+      shelterluv_status: shelterluvStatus,
+      intake: s?.intake_date || '',
+      photo: s?.photo_url || '🐱',
+      symptoms: symptomsByAnimal.get(row.id) || [],
+      last_synced_at: row.last_synced_at,
+      removed_at: row.removed_at,
+      removal_reason: row.removal_reason
+    };
+  })
     .sort(sortKennels);
 
   const meds = (medsRows || []).map(m => ({
