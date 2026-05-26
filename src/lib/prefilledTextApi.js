@@ -112,24 +112,18 @@ export function buildSmsLink(phoneNumbers, message) {
 }
 
 export function openMessagesApp(phoneNumbers, message) {
-  const numbers = Array.isArray(phoneNumbers) ? phoneNumbers : [phoneNumbers];
+  const recipients = Array.isArray(phoneNumbers)
+    ? phoneNumbers
+    : String(phoneNumbers || '').split(',');
 
-  if (numbers.length === 1) {
-    window.location.href = buildSmsLink(numbers[0], message);
-    return;
-  }
+  const cleaned = recipients
+    .flatMap(n => String(n).split(','))
+    .map(n => n.replace(/[^\d+]/g, '').trim())
+    .filter(Boolean);
 
-  const confirmed = window.confirm(
-    `This will open Messages once for each of the ${numbers.length} selected recipients. Continue?`
-  );
+  const encoded = encodeURIComponent(message);
 
-  if (!confirmed) return;
-
-  numbers.forEach((number, index) => {
-    setTimeout(() => {
-      window.location.href = buildSmsLink(number, message);
-    }, index * 1200);
-  });
+  window.location.href = `sms:${cleaned.join(',')}&body=${encoded}`;
 }
 
 export function normalizePhoneNumber(raw) {

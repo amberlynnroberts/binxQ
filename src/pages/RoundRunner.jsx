@@ -199,9 +199,6 @@ async function markPaperDone() {
       ) : (
         <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
       )}
-      <button type="button" className="roundSecondary" onClick={markPaperDone}>
-        Paper Done
-      </button>
 
       <button type="button" className="roundSkip" onClick={skip}>Swipe left to skip</button>
     </main>

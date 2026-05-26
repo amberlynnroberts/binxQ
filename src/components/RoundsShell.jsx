@@ -3,7 +3,6 @@ import { Cat, ClipboardCheck, Home, Building2, Menu, Plus } from 'lucide-react';
 export function RoundsShell({ page, setPage, animalView, setAnimalView, children }) {
   const nav = [
   ['dashboard', Home, 'Dashboard', null],
-  ['round-select', ClipboardCheck, 'Tasks', null],
   ['kennels', Cat, 'Lounge', 'rescue'],
   ['kennels', Building2, 'Kennels', 'quarantine'],
   ['more', Menu, 'More', null]

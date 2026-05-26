@@ -1000,7 +1000,25 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 .roundPrimary,.roundSecondary{min-height:58px;border:0;border-radius:14px;font-size:16px;font-weight:950;color:white}.roundPrimary{background:linear-gradient(135deg,#39d353,#2ea043)}.roundPrimary.blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}.roundSecondary{background:var(--round-card);border:1px solid var(--round-line);color:var(--round-text)}.roundTwoButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.roundSkip{border:0;background:transparent;color:var(--round-muted)}
 .roundComplete{min-height:calc(100vh - 120px);display:grid;align-content:center;gap:22px;text-align:center}.roundConfetti{width:108px;height:108px;margin:0 auto;border-radius:999px;background:var(--round-green-soft);border:8px solid rgba(57,211,83,.32);color:var(--round-green);display:grid;place-items:center;font-size:54px;font-weight:950}.roundComplete.blue .roundConfetti{background:var(--round-blue-soft);border-color:rgba(59,130,246,.36);color:var(--round-blue)}.roundComplete h1{margin:0;font-size:29px}.roundSummaryGrid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--round-line);border-radius:16px;overflow:hidden}.roundSummaryGrid span{min-height:72px;display:grid;place-content:center;border-right:1px solid var(--round-line)}.roundSummaryGrid span:last-child{border-right:0}.roundSummaryGrid b{font-size:24px}.roundSummaryGrid small{color:var(--round-muted)}
 .roundInfoCard h2{margin:0 0 10px}.roundInfoCard li{margin:7px 0;color:var(--round-muted)}.roundTip{display:flex;gap:10px;align-items:center;color:var(--round-muted)}.roundTip svg{color:var(--round-green)}
-.roundsBottomNav{position:fixed;z-index:50;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:1180px;height:78px;background:rgba(2,8,18,.96);backdrop-filter:blur(16px);border-top:1px solid var(--round-line);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 8px 10px}.roundsBottomNav button{border:0;border-radius:16px;color:var(--round-muted);background:transparent;display:grid;place-items:center;gap:2px;font-size:11px}.roundsBottomNav button.active{color:var(--round-green);background:var(--round-green-soft)}.roundsFab{position:absolute;left:50%;top:-25px;transform:translateX(-50%);width:58px;height:58px;border-radius:999px!important;background:linear-gradient(135deg,#39d353,#2ea043)!important;color:white!important;box-shadow:0 14px 35px rgba(57,211,83,.32)}
+.roundsBottomNav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  width: calc(100% - 24px);
+  max-width: 520px;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.92);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.06);
+  z-index: 100;
+}
+
+.roundsBottomNav button{border:0;border-radius:16px;color:var(--round-muted);background:transparent;display:grid;place-items:center;gap:2px;font-size:11px}.roundsBottomNav button.active{color:var(--round-green);background:var(--round-green-soft)}.roundsFab{position:absolute;left:50%;top:-25px;transform:translateX(-50%);width:58px;height:58px;border-radius:999px!important;background:linear-gradient(135deg,#39d353,#2ea043)!important;color:white!important;box-shadow:0 14px 35px rgba(57,211,83,.32)}
 @media (min-width:760px){.roundsDashboard{grid-template-columns:1fr 360px;align-items:start}.roundsWelcome,.roundOverdueBanner,.roundStartList{grid-column:1}.roundGlancePanel,.roundNeedsPanel{grid-column:2}.roundGlancePanel{grid-row:1 / span 2; height:150px}.roundNeedsPanel{grid-row:3 / span 2}}
 @media (max-width:420px){.roundGlanceGrid{grid-template-columns:repeat(2,1fr)}}
 
