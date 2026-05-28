@@ -17,6 +17,7 @@ import { RoundSelect } from './pages/RoundSelect';
 import { RoundRunner } from './pages/RoundRunner';
 import { RoundSummary } from './pages/RoundSummary';
 import { QuarantineChecklist } from './pages/QuarantineChecklist';
+import  { RoundKennels } from './pages/RoundKennels';
 
 export default function App() {
   const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -27,6 +28,8 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('kennelcheck-theme') || 'dark');
   const [animalView, setAnimalView] = useState('quarantine');
   const [activeRound, setActiveRound] = useState({ type: 'care', shift: 'AM' });
+  const [selectedRoundAnimal, setSelectedRoundAnimal] = useState(null);
+  const [selectedRoundMedication, setSelectedRoundMedication] = useState(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -60,7 +63,9 @@ export default function App() {
 
   function startRound(type, shift = 'AM') {
     setActiveRound({ type, shift });
-    setPage('round-runner');
+    setSelectedRoundAnimal(null);
+    setSelectedRoundMedication(null);
+    setPage('round-kennels');
   }
 
   async function addAnimal(form) {
@@ -83,7 +88,7 @@ export default function App() {
         age: animal.age || '',
         color: animal.desc || '',
         intake_date: animal.intake || new Date().toISOString().slice(0, 10),
-        kennel_number: animal.kennel || 'Quarantine Kennel 1',
+        kennel_number: animal.kennel || '',
         local_status: animal.status || 'Quarantine'
       }
     : defaultAnimalForm();
@@ -111,6 +116,17 @@ export default function App() {
         />
       )}
 
+      {page === 'round-kennels' && (
+        <RoundKennels
+          data={visibleData}
+          roundType={activeRound.type}
+          shift={activeRound.shift}
+          setPage={setPage}
+          setSelectedRoundAnimal={setSelectedRoundAnimal}
+          setSelectedRoundMedication={setSelectedRoundMedication}
+        />
+      )}
+
       {page === 'round-runner' && (
         <RoundRunner
           data={visibleData}
@@ -119,6 +135,8 @@ export default function App() {
           setPage={setPage}
           reload={reload}
           setRoundSummary={setRoundSummary}
+          selectedRoundAnimal={selectedRoundAnimal}
+          selectedRoundMedication={selectedRoundMedication}
         />
       )}
 

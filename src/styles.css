@@ -1590,6 +1590,267 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   animation: toastSlideUp 0.22s ease;
 }
 
+.roundBoardScreen {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  padding-bottom: 110px;
+}
+
+.roundBoardHero {
+  border: 1px solid rgba(57, 211, 83, 0.28);
+  background: linear-gradient(135deg, rgba(57, 211, 83, 0.18), rgba(13, 23, 36, 0.95));
+  border-radius: 24px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.roundBoardHero.blue {
+  border-color: rgba(59, 130, 246, 0.34);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(13, 23, 36, 0.95));
+}
+
+.roundBoardHero p,
+.roundBoardHero h2,
+.roundBoardHero small {
+  margin: 0;
+}
+
+.roundBoardHero p {
+  color: var(--round-green);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 12px;
+}
+
+.roundBoardHero.blue p {
+  color: var(--round-blue);
+}
+
+.roundBoardHero h2 {
+  margin-top: 5px;
+  font-size: 28px;
+  letter-spacing: -0.05em;
+}
+
+.roundBoardHero small {
+  display: block;
+  margin-top: 6px;
+  color: var(--round-muted);
+}
+
+.roundBoardSearch {
+  min-height: 52px;
+  border: 1px solid var(--round-line);
+  border-radius: 18px;
+  background: var(--round-card);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  color: var(--round-muted);
+}
+
+.roundBoardSearch input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: var(--round-text);
+  background: transparent;
+}
+
+.roundKennelGroups {
+  display: grid;
+  gap: 18px;
+}
+
+.roundKennelSection {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.88);
+  border-radius: 24px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.roundKennelHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.roundKennelHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.roundKennelHeader small {
+  color: var(--round-muted);
+}
+
+.roundBoardDone,
+.roundBoardPercent {
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.roundBoardDone {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.roundBoardPercent {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.roundKennelCards {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 14px 0 2px;
+  scroll-snap-type: x mandatory;
+}
+
+.roundCatCard {
+  flex: 0 0 178px;
+  min-height: 220px;
+  border: 1px solid var(--round-line);
+  border-radius: 22px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(2, 8, 18, 0.95));
+  color: var(--round-text);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.roundCatCard.done {
+  opacity: 0.68;
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.roundCatCard .animalThumb,
+.roundCatCard img {
+  width: 100%;
+  height: 92px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.roundCatInfo {
+  display: grid;
+  gap: 3px;
+}
+
+.roundCatInfo b {
+  font-size: 17px;
+  letter-spacing: -0.03em;
+}
+
+.roundCatInfo small {
+  color: var(--round-muted);
+}
+
+.catDueBadge,
+.catDoneBadge {
+  margin-top: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.catDueBadge {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.14);
+  border: 1px solid rgba(249, 115, 22, 0.24);
+}
+
+.catDueBadge.blue {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.26);
+}
+
+.catDoneBadge {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.roundBoardEmpty {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.88);
+  border-radius: 24px;
+  padding: 30px 18px;
+  text-align: center;
+  color: var(--round-muted);
+}
+
+.roundBoardEmpty svg {
+  color: var(--round-green);
+}
+
+.roundBoardEmpty h2 {
+  color: var(--round-text);
+  margin-bottom: 4px;
+}
+
+.emptyKennelCard {
+  min-width: 180px;
+  min-height: 180px;
+
+  border-radius: 22px;
+
+  border: 2px dashed rgba(148,163,184,0.22);
+
+  background: rgba(15,23,42,0.42);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--round-muted);
+
+  text-align: center;
+}
+
+.emptyKennelCard b {
+  color: white;
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+@media (min-width: 760px) {
+  .roundCatCard {
+    flex-basis: 210px;
+  }
+
+  .roundCatCard .animalThumb,
+  .roundCatCard img {
+    height: 112px;
+  }
+}
+
 @keyframes toastSlideUp {
   from {
     opacity: 0;

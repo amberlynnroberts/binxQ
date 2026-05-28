@@ -10,7 +10,7 @@ export function defaultAnimalForm() {
     age: '',
     color: '',
     intake_date: new Date().toISOString().slice(0, 10),
-    kennel_number: 'Quarantine Kennel 1',
+    kennel_number: '',
     local_status: 'Quarantine'
   };
 }
@@ -55,8 +55,16 @@ export function AnimalForm({ title, initialForm, submitText, onSubmit, onCancel 
         </label>
 
         <label>Kennel
-          <select value={form.kennel_number} onChange={e => set('kennel_number', e.target.value)}>
-            {Array.from({ length: 9 }, (_, i) => <option key={i + 1}>Quarantine Kennel {i + 1}</option>)}
+          <select
+            value={form.kennel_number || ''}
+            onChange={e => set('kennel_number', e.target.value)}
+          >
+            <option value="">Select kennel...</option>
+            {Array.from({ length: 9 }, (_, i) => (
+              <option key={i + 1} value={`Quarantine Kennel ${i + 1}`}>
+                Quarantine Kennel {i + 1}
+              </option>
+            ))}
           </select>
         </label>
 

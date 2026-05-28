@@ -32,7 +32,7 @@ function AnimalHero({ animal }) {
   );
 }
 
-export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundSummary }) {
+export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSummary, selectedRoundAnimal, selectedRoundMedication}) {
   const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
   const [index, setIndex] = useState(0);
   const [signedBy, setSignedBy] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
@@ -60,9 +60,22 @@ export function RoundRunner({ data, roundType, shift, setPage, reload, setRoundS
       : buildCareRoundItems(animals, signoffs.cleaning, shift);
   }, [roundType, animals, meds, signoffs, shift]);
 
+  const selectedItem = useMemo(() => {
+  if (!selectedRoundAnimal) return null;
+
+  if (roundType === 'med') {
+    return allItems.find(item =>
+      item.animal.id === selectedRoundAnimal &&
+      (!selectedRoundMedication || item.med?.id === selectedRoundMedication)
+    );
+  }
+
+  return allItems.find(item => item.animal.id === selectedRoundAnimal);
+}, [allItems, selectedRoundAnimal, selectedRoundMedication, roundType]);
+
   const items = allItems.filter(item => !item.done);
   const total = allItems.length || items.length;
-  const item = items[index] || items[0];
+  const item = selectedItem || items[index] || items[0];
   const completed = Math.max(0, total - items.length);
   const isDone = !item;
 
@@ -99,7 +112,7 @@ async function markPaperDone() {
       setNote('');
       await load();
       await reload?.();
-      setIndex(0);
+      setPage('round-kennels');
     } finally {
       setBusy(false);
     }
