@@ -20,9 +20,10 @@ import { QuarantineChecklist } from './pages/QuarantineChecklist';
 import { RoundKennels } from './pages/RoundKennels';
 import { VetTasks } from './pages/VetTasks';
 import { VetCalendar } from './pages/VetCalendar';
+import PasscodeGate from './components/PasscodeGate';
 
 export default function App() {
-  const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
+  const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
   const [roundSummary, setRoundSummary] = useState({completed: 0, skipped: 0, roundType: 'care', shift: 'AM'});
   const [page, setPage] = useState('dashboard');
   const [selected, setSelected] = useState(null);
@@ -96,151 +97,153 @@ export default function App() {
     : defaultAnimalForm();
 
   return (
-    <RoundsShell page={page} setPage={setPage} animalView={animalView} setAnimalView={setAnimalView}>
-      {page === 'dashboard' && (
-        <RoundsDashboard
-          data={visibleData}
-          alerts={alerts}
-          setPage={setPage}
-          startRound={startRound}
-        />
-      )}
+    <PasscodeGate>
+      <RoundsShell page={page} setPage={setPage} animalView={animalView} setAnimalView={setAnimalView}>
+        {page === 'dashboard' && (
+          <RoundsDashboard
+            data={visibleData}
+            alerts={alerts}
+            setPage={setPage}
+            startRound={startRound}
+          />
+        )}
 
-      {page === 'quarantine-checklist' && (
-        <QuarantineChecklist setPage={setPage} />
-      )}
+        {page === 'quarantine-checklist' && (
+          <QuarantineChecklist setPage={setPage} />
+        )}
 
-      {page === 'round-select' && (
-        <RoundSelect
-          data={visibleData}
-          setPage={setPage}
-          startRound={startRound}
-        />
-      )}
+        {page === 'round-select' && (
+          <RoundSelect
+            data={visibleData}
+            setPage={setPage}
+            startRound={startRound}
+          />
+        )}
 
-      {page === 'round-kennels' && (
-        <RoundKennels
-          data={visibleData}
-          roundType={activeRound.type}
-          shift={activeRound.shift}
-          setPage={setPage}
-          setSelectedRoundAnimal={setSelectedRoundAnimal}
-          setSelectedRoundMedication={setSelectedRoundMedication}
-        />
-      )}
+        {page === 'round-kennels' && (
+          <RoundKennels
+            data={visibleData}
+            roundType={activeRound.type}
+            shift={activeRound.shift}
+            setPage={setPage}
+            setSelectedRoundAnimal={setSelectedRoundAnimal}
+            setSelectedRoundMedication={setSelectedRoundMedication}
+          />
+        )}
 
-      {page === 'round-runner' && (
-        <RoundRunner
-          data={visibleData}
-          roundType={activeRound.type}
-          shift={activeRound.shift}
-          setPage={setPage}
-          reload={reload}
-          setRoundSummary={setRoundSummary}
-          selectedRoundAnimal={selectedRoundAnimal}
-          selectedRoundMedication={selectedRoundMedication}
-        />
-      )}
+        {page === 'round-runner' && (
+          <RoundRunner
+            data={visibleData}
+            roundType={activeRound.type}
+            shift={activeRound.shift}
+            setPage={setPage}
+            reload={reload}
+            setRoundSummary={setRoundSummary}
+            selectedRoundAnimal={selectedRoundAnimal}
+            selectedRoundMedication={selectedRoundMedication}
+          />
+        )}
 
-      {page === 'daily-care' && (
-        <DailyCare
-          data={visibleData || data}
-          reload={reload}
-        />
-      )}
+        {page === 'daily-care' && (
+          <DailyCare
+            data={visibleData || data}
+            reload={reload}
+          />
+        )}
 
-      {page === 'kennels' && (
-        <Kennels
-          data={visibleData}
-          allAnimals={data.animals}
-          query={query}
-          setQuery={setQuery}
-          select={selectAnimal}
-          add={() => setPage('add')}
-          animalView={animalView}
-          setAnimalView={setAnimalView}
-        />
-      )}
+        {page === 'kennels' && (
+          <Kennels
+            data={visibleData}
+            allAnimals={data.animals}
+            query={query}
+            setQuery={setQuery}
+            select={selectAnimal}
+            add={() => setPage('add')}
+            animalView={animalView}
+            setAnimalView={setAnimalView}
+          />
+        )}
 
-      {page === 'add' && (
-        <AnimalForm
-          title="Add Cat to Quarantine"
-          initialForm={defaultAnimalForm()}
-          submitText="Add Cat"
-          onSubmit={addAnimal}
-          onCancel={() => setPage('kennels')}
-        />
-      )}
+        {page === 'add' && (
+          <AnimalForm
+            title="Add Cat to Quarantine"
+            initialForm={defaultAnimalForm()}
+            submitText="Add Cat"
+            onSubmit={addAnimal}
+            onCancel={() => setPage('kennels')}
+          />
+        )}
 
-      {page === 'card' && animal && (
-        <AnimalCard
-          animal={animal}
-          data={data}
-          reload={reload}
-          back={() => setPage('kennels')}
-          edit={() => setPage('edit')}
-        />
-      )}
+        {page === 'card' && animal && (
+          <AnimalCard
+            animal={animal}
+            data={data}
+            reload={reload}
+            back={() => setPage('kennels')}
+            edit={() => setPage('edit')}
+          />
+        )}
 
-      {page === 'vet-calendar' && (
-        <VetCalendar
-          data={visibleData}
-          setPage={setPage}
-        />
-      )}
+        {page === 'vet-calendar' && (
+          <VetCalendar
+            data={visibleData}
+            setPage={setPage}
+          />
+        )}
 
-      {page === 'edit' && animal && (
-        <AnimalForm
-          title={`Edit ${animal.name}`}
-          initialForm={editInitial}
-          submitText="Save Changes"
-          onSubmit={editAnimal}
-          onCancel={() => setPage('card')}
-        />
-      )}
+        {page === 'edit' && animal && (
+          <AnimalForm
+            title={`Edit ${animal.name}`}
+            initialForm={editInitial}
+            submitText="Save Changes"
+            onSubmit={editAnimal}
+            onCancel={() => setPage('card')}
+          />
+        )}
 
-      {page === 'vet-tasks' && (
-        <VetTasks
-          data={visibleData}
-          setPage={setPage}
-        />
-      )}
+        {page === 'vet-tasks' && (
+          <VetTasks
+            data={visibleData}
+            setPage={setPage}
+          />
+        )}
 
-      {page === 'meds' && (
-        <Meds
-          data={visibleData}
-          select={selectAnimal}
-        />
-      )}
+        {page === 'meds' && (
+          <Meds
+            data={visibleData}
+            select={selectAnimal}
+          />
+        )}
 
-      {page === 'shift' && (
-        <Shift data={visibleData} />
-      )}
+        {page === 'shift' && (
+          <Shift data={visibleData} />
+        )}
 
-      {page === 'more' && (
-        <More
-          reload={reload}
-          dbStatus={dbStatus}
-          setDbStatus={setDbStatus}
-          setPage={setPage}
-        />
-      )}
+        {page === 'more' && (
+          <More
+            reload={reload}
+            dbStatus={dbStatus}
+            setDbStatus={setDbStatus}
+            setPage={setPage}
+          />
+        )}
 
-      {page === 'round-summary' && (
-        <RoundSummary
-          completed={roundSummary.completed}
-          skipped={roundSummary.skipped}
-          roundType={roundSummary.roundType}
-          shift={roundSummary.shift}
-          setPage={setPage}
-        />
-      )}
-      
-      {page === 'reports' && (
-        <Reports />
-      )}
+        {page === 'round-summary' && (
+          <RoundSummary
+            completed={roundSummary.completed}
+            skipped={roundSummary.skipped}
+            roundType={roundSummary.roundType}
+            shift={roundSummary.shift}
+            setPage={setPage}
+          />
+        )}
+        
+        {page === 'reports' && (
+          <Reports />
+        )}
 
-      {page === 'text-alert' && <TextAlert />}
-    </RoundsShell>
+        {page === 'text-alert' && <TextAlert />}
+      </RoundsShell>
+    </PasscodeGate>
   );
 }
