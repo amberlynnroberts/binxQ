@@ -17,7 +17,9 @@ import { RoundSelect } from './pages/RoundSelect';
 import { RoundRunner } from './pages/RoundRunner';
 import { RoundSummary } from './pages/RoundSummary';
 import { QuarantineChecklist } from './pages/QuarantineChecklist';
-import  { RoundKennels } from './pages/RoundKennels';
+import { RoundKennels } from './pages/RoundKennels';
+import { VetTasks } from './pages/VetTasks';
+import { VetCalendar } from './pages/VetCalendar';
 
 export default function App() {
   const { data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -180,6 +182,13 @@ export default function App() {
         />
       )}
 
+      {page === 'vet-calendar' && (
+        <VetCalendar
+          data={visibleData}
+          setPage={setPage}
+        />
+      )}
+
       {page === 'edit' && animal && (
         <AnimalForm
           title={`Edit ${animal.name}`}
@@ -187,6 +196,13 @@ export default function App() {
           submitText="Save Changes"
           onSubmit={editAnimal}
           onCancel={() => setPage('card')}
+        />
+      )}
+
+      {page === 'vet-tasks' && (
+        <VetTasks
+          data={visibleData}
+          setPage={setPage}
         />
       )}
 

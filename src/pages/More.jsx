@@ -34,6 +34,13 @@ const [showSyncSuccess, setShowSyncSuccess] = useState(false);
       </section>
 
       <button
+        type="button"
+        className="actionCardButton"
+        onClick={() => setPage('vet-calendar')}>
+        Vet Calendar
+      </button>
+
+      <button
         className="actionCardButton"
         onClick={syncEverything}>
         Sync Everything
