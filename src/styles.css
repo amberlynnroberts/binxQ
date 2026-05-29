@@ -1917,6 +1917,8 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   grid-column: 1 / -1;
 }
 
+
+
 .vetAnimalTabs button {
   min-height: 48px;
   border: 1px solid var(--round-line);
@@ -1934,6 +1936,54 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 
 .vetEventCard {
   transition: 0.18s ease;
+}
+
+.vetEventActions button:first-child {
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.25),
+    rgba(22, 163, 74, 0.18)
+  );
+
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+
+  box-shadow:
+    0 0 0 1px rgba(34,197,94,.05),
+    0 8px 20px rgba(34,197,94,.15);
+}
+
+.vetEventActions button:first-child:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.35),
+    rgba(22, 163, 74, 0.25)
+  );
+}
+
+.vetEventActions button:last-child {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.22),
+    rgba(185, 28, 28, 0.18)
+  );
+
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  color: #f87171;
+
+  box-shadow:
+    0 0 0 1px rgba(239,68,68,.05),
+    0 8px 20px rgba(239,68,68,.15);
+}
+
+.vetEventActions button:last-child:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.35),
+    rgba(185, 28, 28, 0.25)
+  );
 }
 
 .vetEventCard:hover {
@@ -2011,6 +2061,284 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   .vetEventForm label:nth-child(8),
   .vetEventForm button {
     grid-column: 1 / -1;
+  }
+}
+.vetCalendarPage {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+  padding-bottom: 120px;
+}
+
+.vetCalendarHero.improved {
+  border: 1px solid rgba(168, 85, 247, 0.34);
+  background:
+    radial-gradient(circle at top left, rgba(168, 85, 247, 0.22), transparent 34%),
+    linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(13, 23, 36, 0.98));
+  border-radius: 28px;
+  padding: 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.vetStatsGrid.improved {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+}
+
+.vetStatsGrid.improved button {
+  border: 1px solid var(--round-line);
+  background: rgba(15, 23, 42, 0.88);
+  border-radius: 20px;
+  padding: 16px;
+  color: var(--round-text);
+  text-align: center;
+}
+
+.vetStatsGrid.improved b,
+.vetStatsGrid.improved small {
+  display: block;
+}
+
+.vetStatsGrid.improved b {
+  font-size: 28px;
+  font-weight: 950;
+}
+
+.vetStatsGrid.improved small {
+  color: var(--round-muted);
+  margin-top: 3px;
+}
+
+.vetStatsGrid.improved .warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.vetStatsGrid.improved .danger {
+  border-color: rgba(239, 68, 68, 0.38);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.vetQuickAddPanel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.vetTemplateButton {
+  border: 1px solid rgba(168, 85, 247, 0.24);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(59, 130, 246, 0.09));
+  color: white;
+  min-height: 84px;
+  padding: 14px;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  text-align: center;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.16);
+}
+
+.vetTemplateButton span {
+  font-size: 26px;
+}
+
+.vetTemplateButton small {
+  color: rgba(255, 255, 255, 0.76);
+  font-weight: 900;
+}
+
+.vetCalendarToolbar.improved {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.9);
+  border-radius: 24px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1.4fr 170px 150px auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.vetCalendarToolbar.improved label,
+.vetEventForm.improved label {
+  display: grid;
+  gap: 7px;
+  color: var(--round-muted);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.vetSearchBox {
+  position: relative;
+}
+
+.vetSearchBox svg {
+  position: absolute;
+  left: 14px;
+  bottom: 18px;
+  color: var(--round-muted);
+}
+
+.vetSearchBox input {
+  padding-left: 40px !important;
+}
+
+.vetCalendarToolbar.improved input,
+.vetCalendarToolbar.improved select,
+.vetEventForm.improved input,
+.vetEventForm.improved select,
+.vetEventForm.improved textarea {
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.96);
+  color: white;
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+}
+
+.vetCalendarToolbar.improved select,
+.vetEventForm.improved select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+    linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) 24px,
+    calc(100% - 14px) 24px;
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+
+.vetEventForm.improved {
+  border: 1px solid rgba(168, 85, 247, 0.24);
+  background: rgba(13, 23, 36, 0.94);
+  border-radius: 28px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.vetFormHeader {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 4px;
+}
+
+.vetFormHeader h2,
+.vetFormHeader small {
+  margin: 0;
+}
+
+.vetFormHeader small {
+  color: var(--round-muted);
+  display: block;
+  margin-top: 4px;
+}
+
+.vetFormHeader button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--round-line);
+  background: var(--round-card);
+  color: white;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.vetEventForm.improved .wide {
+  grid-column: 1 / -1;
+}
+
+.vetEventForm.improved textarea {
+  min-height: 98px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.vetDateGroups.improved {
+  display: grid;
+  gap: 16px;
+}
+
+.vetDateGroup.improved {
+  border: 1px solid var(--round-line);
+  background: rgba(13, 23, 36, 0.88);
+  border-radius: 24px;
+  padding: 14px;
+}
+
+.vetDateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.vetDateHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.vetDateHeader span {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(168, 85, 247, 0.17);
+  color: #d8b4fe;
+  font-weight: 950;
+}
+
+.vetEventCard {
+  transition: 0.18s ease;
+}
+
+.vetEventCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.vetTimeLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (max-width: 820px) {
+  .vetCalendarToolbar.improved {
+    grid-template-columns: 1fr;
+  }
+
+  .vetQuickAddPanel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vetEventForm.improved {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .vetStatsGrid.improved {
+    grid-template-columns: 1fr;
   }
 }
 
