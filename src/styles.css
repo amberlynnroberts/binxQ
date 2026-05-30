@@ -2094,6 +2094,23 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   transition: all 0.2s ease;
 }
 
+.shiftBadges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.badge.green { background: #d1fae5; color: #065f46; }
+.badge.red   { background: #fee2e2; color: #991b1b; }
+.badge.gray  { background: #f3f4f6; color: #6b7280; }
+
 .floatingFeedback:hover {
   transform: translateY(-2px) scale(1.05);
 }

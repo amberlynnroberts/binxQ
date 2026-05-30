@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort, Stat } from '../components/ui';
-import { DailyCareDashboardAlerts} from '../components/DailyCareDashboardAlerts';
-import { useEffect, useMemo, useState } from 'react';
+import { DailyCareDashboardAlerts } from '../components/DailyCareDashboardAlerts';
 import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
 import {
   currentHour,
@@ -11,39 +10,54 @@ import {
   todayDateString
 } from '../lib/careTaskRules';
 
-  export function Dashboard({ data, alerts, setPage, select }) {
-    const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
-    console.log(data);
+export function Dashboard({ data, alerts, setPage, select }) {
+  const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
+  const [now, setNow] = useState(currentHour());
 
+  console.log(data);
+
+  // refresh the hour every minute
+  useEffect(() => {
+    const interval = setInterval(() => setNow(currentHour()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // reload signoffs on a timer, not just when animal count changes
   useEffect(() => {
     fetchCleaningSignoffsForDate(todayDateString())
       .then(setCleaningSignoffs)
       .catch(console.error);
-  }, [data.animals.length]);
+
+    const interval = setInterval(() => {
+      fetchCleaningSignoffsForDate(todayDateString())
+        .then(setCleaningSignoffs)
+        .catch(console.error);
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const cleaningTasks = useMemo(() => {
     return getMissingCleaningTasks({
       animals: data.animals,
       cleaningSignoffs,
-      hour: currentHour()
+      hour: now
     });
-  }, [data.animals, cleaningSignoffs]);
+  }, [data.animals, cleaningSignoffs, now]);
+
   return (
     <main>
       <h1>Quarantine Dashboard</h1>
       <p>Live data from Supabase. NOT ShelterLuv</p>
-
       <section className="stats">
-        <Stat n={data.animals.length} t="Animals" kind="green"/>
-        <Stat n={alerts.length} t="Need attention" kind="yellow"/>
-        <Stat n={data.meds.length} t="Meds due" kind="red"/>
+        <Stat n={data.animals.length} t="Animals" kind="green" />
+        <Stat n={alerts.length} t="Need attention" kind="yellow" />
+        <Stat n={data.meds.length} t="Meds due" kind="red" />
       </section>
-
       {/* <div className="title">
         <h2>Needs Attention</h2>
         <button className="primary" onClick={() => setPage('add')}><Plus size={16}/> Add Cat</button>
       </div>
-
       <div className="list">
         {alerts.length === 0 && <Empty text="No urgent quarantine alerts." />}
         {alerts.map(a => (

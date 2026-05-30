@@ -6,8 +6,6 @@ import {
   Plus,
   Send,
   Trash2,
-  ToggleLeft,
-  ToggleRight,
   Users
 } from 'lucide-react';
 import {
@@ -15,7 +13,6 @@ import {
   buildTextMessage,
   deleteTextRecipient,
   fetchTextRecipients,
-  openMessagesApp,
   updateTextRecipient
 } from '../lib/prefilledTextApi';
 
@@ -60,6 +57,8 @@ export function TextAlert() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAddPerson, setShowAddPerson] = useState(false);
+  const [currentRecipientIndex, setCurrentRecipientIndex] = useState(null);
+  const [sendQueue, setSendQueue] = useState([]);
 
   const setAlert = (key, value) => setAlertForm(prev => ({ ...prev, [key]: value }));
   const setRecipient = (key, value) => setRecipientForm(prev => ({ ...prev, [key]: value }));
@@ -67,7 +66,6 @@ export function TextAlert() {
   async function loadRecipients() {
     const rows = await fetchTextRecipients();
     setRecipients(rows);
-
     setSelectedRecipientIds(prev => {
       const activeIds = rows.filter(r => r.active).map(r => r.id);
       const stillValid = prev.filter(id => activeIds.includes(id));
@@ -83,6 +81,32 @@ export function TextAlert() {
   const selectedRecipients = recipients.filter(r => selectedRecipientIds.includes(r.id) && r.active);
   const previewMessage = useMemo(() => buildTextMessage(alertForm), [alertForm]);
 
+  function showTemporaryMessage(text) {
+    setMessage(text);
+    setTimeout(() => setMessage(''), 5000);
+  }
+
+  function sendToNext(index, queue) {
+    if (index >= queue.length) {
+      setCurrentRecipientIndex(null);
+      setSendQueue([]);
+      showTemporaryMessage('All messages opened!');
+      return;
+    }
+
+    const recipient = queue[index];
+    const encoded = encodeURIComponent(buildTextMessage(alertForm));
+    const link = `sms:${recipient.phone_number}?&body=${encoded}`;
+
+    const a = document.createElement('a');
+    a.href = link;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setCurrentRecipientIndex(index + 1);
+  }
+
   function toggleSelected(id) {
     setSelectedRecipientIds(prev =>
       prev.includes(id)
@@ -90,14 +114,6 @@ export function TextAlert() {
         : [...prev, id]
     );
   }
-
-  function showTemporaryMessage(text) {
-  setMessage(text);
-
-  setTimeout(() => {
-    setMessage('');
-  }, 5000);
-}
 
   function selectAll() {
     setSelectedRecipientIds(activeRecipients.map(r => r.id));
@@ -110,7 +126,6 @@ export function TextAlert() {
   async function addRecipient(e) {
     e.preventDefault();
     setMessage('');
-
     try {
       setBusy(true);
       const added = await addTextRecipient(recipientForm);
@@ -136,34 +151,6 @@ export function TextAlert() {
     if (!window.confirm('Remove this recipient?')) return;
     await deleteTextRecipient(id);
     await loadRecipients();
-  }
-
-  async function sendText(e) {
-    e.preventDefault();
-    setMessage('');
-
-    if (!alertForm.item_name.trim()) {
-      setMessage('Please enter a supply item.');
-      return;
-    }
-
-    if (selectedRecipients.length === 0) {
-      setMessage('Select at least one person to text.');
-      return;
-    }
-
-    try {
-      setBusy(true);
-      const phoneNumbers = selectedRecipients.map(r => r.phone_number);
-      const textMessage = buildTextMessage(alertForm);
-
-      showTemporaryMessage(`Opening Messages for ${phoneNumbers.length} recipient(s). Tap Send in Messages.`);      openMessagesApp(phoneNumbers, textMessage);
-    } catch (err) {
-      console.error(err);
-      setMessage(err.message || 'Failed to open Messages.');
-    } finally {
-      setBusy(false);
-    }
   }
 
   return (
@@ -200,13 +187,11 @@ export function TextAlert() {
                   checked={selectedRecipientIds.includes(recipient.id)}
                   onChange={() => toggleSelected(recipient.id)}
                 />
-
                 <span>
                   <b>{recipient.name || 'Unnamed'}</b>
                   <small>{recipient.phone_number}</small>
                 </span>
               </label>
-
               <div className="recipientActions">
                 <button
                   type="button"
@@ -229,7 +214,6 @@ export function TextAlert() {
                 placeholder="Manager Name"
               />
             </label>
-
             <label>Phone Number
               <input
                 value={recipientForm.phone_number}
@@ -237,7 +221,6 @@ export function TextAlert() {
                 placeholder="8288675309"
               />
             </label>
-
             <button className="primary full" disabled={busy}>
               <Plus size={16} />
               {busy ? 'Adding...' : 'Add & Select'}
@@ -246,12 +229,12 @@ export function TextAlert() {
         )}
       </section>
 
-      <form className="panel form" onSubmit={sendText}>
+      <form className="panel form" onSubmit={e => e.preventDefault()}>
         <h2><MessageSquare size={18} /> Low Supply Request</h2>
 
         {message && (
-          <p className={message.includes('Opening') || message.includes('added') ? 'success' : 'error'}>
-            {message.includes('Opening') || message.includes('added') ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+          <p className={message.includes('Opening') || message.includes('added') || message.includes('All') ? 'success' : 'error'}>
+            {message.includes('Opening') || message.includes('added') || message.includes('All') ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             {message}
           </p>
         )}
@@ -318,12 +301,53 @@ export function TextAlert() {
           <b>Message Preview</b>
           <pre>{previewMessage}</pre>
         </section>
+      </form>
 
-        <button className="primary full" disabled={busy}>
+      {currentRecipientIndex !== null && currentRecipientIndex <= sendQueue.length ? (
+        currentRecipientIndex === sendQueue.length ? (
+          <button
+            className="primary full"
+            type="button"
+            onClick={() => {
+              setCurrentRecipientIndex(null);
+              setSendQueue([]);
+              showTemporaryMessage('All messages opened!');
+            }}>
+            <Send size={16} />
+            Done ✓
+          </button>
+        ) : (
+          <button
+            className="primary full"
+            type="button"
+            onClick={() => sendToNext(currentRecipientIndex, sendQueue)}>
+            <Send size={16} />
+            Next: Text {sendQueue[currentRecipientIndex]?.name} ({currentRecipientIndex + 1}/{sendQueue.length})
+          </button>
+        )
+      ) : (
+        <button
+          className="primary full"
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (!alertForm.item_name.trim()) {
+              setMessage('Please enter a supply item.');
+              return;
+            }
+            if (selectedRecipients.length === 0) {
+              setMessage('Select at least one person to text.');
+              return;
+            }
+            const queue = [...selectedRecipients];
+            setSendQueue(queue);
+            sendToNext(0, queue);
+          }}>
           <Send size={16} />
           {busy ? 'Opening...' : `Open Messages App (${selectedRecipients.length})`}
         </button>
-      </form>
+      )}
+
     </main>
   );
 }

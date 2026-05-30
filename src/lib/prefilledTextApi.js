@@ -121,9 +121,20 @@ export function openMessagesApp(phoneNumbers, message) {
     .map(n => n.replace(/[^\d+]/g, '').trim())
     .filter(Boolean);
 
+  const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
   const encoded = encodeURIComponent(message);
 
-  window.location.href = `sms:${cleaned.join(',')}&body=${encoded}`;
+  cleaned.forEach((number, index) => {
+    const link = isApple
+      ? `sms:${number}?&body=${encoded}`
+      : `sms:${number}?body=${encoded}`;
+
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = link;
+      a.click();
+    }, index * 500); // stagger each one by 500ms
+  });
 }
 
 export function normalizePhoneNumber(raw) {
