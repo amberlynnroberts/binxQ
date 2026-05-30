@@ -1,6 +1,8 @@
 import React from 'react';
 import { Home, Grid3X3, Pill, ClipboardCheck, MoreHorizontal, Menu, RefreshCw, Sun, Moon, MessageSquare } from 'lucide-react';
 
+const [showFeedback, setShowFeedback] = useState(false);
+
 export function Layout({ children, page, setPage, reload, theme, toggleTheme, dbStatus, loading }) {
   return (
     <div className="app">

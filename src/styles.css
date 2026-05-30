@@ -2023,6 +2023,81 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   border-radius: 12px;
 }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+}
+
+.modalCard {
+  width: 360px;
+  background: #020617;
+  border-radius: 20px;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(168,85,247,.3);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalCard input,
+.modalCard select,
+.modalCard textarea {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,.2);
+  background: #020617;
+  color: white;
+  padding: 10px;
+}
+
+.modalCard textarea {
+  min-height: 100px;
+}
+
+.floatingFeedback {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(168,85,247,.35);
+  background: linear-gradient(
+    135deg,
+    rgba(168,85,247,.25),
+    rgba(59,130,246,.2)
+  );
+
+  color: white;
+  font-size: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,.3);
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.floatingFeedback:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
 .vetEventCard:hover {
   transform: translateY(-1px);
   border-color: rgba(168,85,247,.35);

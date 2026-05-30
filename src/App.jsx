@@ -21,6 +21,7 @@ import { RoundKennels } from './pages/RoundKennels';
 import { VetTasks } from './pages/VetTasks';
 import { VetCalendar } from './pages/VetCalendar';
 import PasscodeGate from './components/PasscodeGate';
+import FeedbackModal from './components/FeedbackModal';
 
 export default function App() {
   const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -33,6 +34,7 @@ export default function App() {
   const [activeRound, setActiveRound] = useState({ type: 'care', shift: 'AM' });
   const [selectedRoundAnimal, setSelectedRoundAnimal] = useState(null);
   const [selectedRoundMedication, setSelectedRoundMedication] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -99,6 +101,14 @@ export default function App() {
   return (
     <PasscodeGate>
       <RoundsShell page={page} setPage={setPage} animalView={animalView} setAnimalView={setAnimalView}>
+        <button
+          className="floatingFeedback"
+          onClick={() => setShowFeedback(true)}>
+          💬
+        </button>
+        {showFeedback && (
+          <FeedbackModal onClose={() => setShowFeedback(false)} />
+        )}
         {page === 'dashboard' && (
           <RoundsDashboard
             data={visibleData}
