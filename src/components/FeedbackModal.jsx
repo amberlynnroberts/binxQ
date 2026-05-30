@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 export default function FeedbackModal({ onClose }) {
   const [message, setMessage] = useState('');
@@ -7,29 +8,28 @@ export default function FeedbackModal({ onClose }) {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
 
-  async function submit(e) {
-    e.preventDefault();
-    setSending(true);
-
-    try {
-      await fetch('/api/send-feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type,
-          message,
-          page: window.location.pathname
-        })
-      });
-
-      setDone(true);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to send');
-    } finally {
-      setSending(false);
-    }
+async function submit(e) {
+  e.preventDefault();
+  setSending(true);
+  try {
+    await emailjs.send(
+      'service_spjq8a9',
+      'template_f1j18v7',
+      {
+        feedback_type: type,
+        message: message,
+        page: window.location.pathname
+      },
+      'Ya-xqPLmWgxqIG1J6'
+    );
+    setDone(true);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to send');
+  } finally {
+    setSending(false);
   }
+}
 
   return (
     <div className="modalOverlay">
