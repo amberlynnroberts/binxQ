@@ -14,7 +14,7 @@ async function submit(e) {
   try {
     await emailjs.send(
       'service_spjq8a9',
-      'template_f1j18v7',
+      'template_0iwi5qp',
       {
         feedback_type: type,
         message: message,
