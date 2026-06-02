@@ -1991,22 +1991,25 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 
 .passcodeGate {
   height: 100vh;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
   background: radial-gradient(circle at top, #1e293b, #020617);
 }
 
 .passcodeCard {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   padding: 28px;
   border-radius: 20px;
   background: rgba(15, 23, 42, 0.95);
   border: 1px solid rgba(168, 85, 247, 0.25);
-
   display: grid;
   gap: 14px;
   text-align: center;
-
   box-shadow: 0 25px 60px rgba(0,0,0,.4);
 }
 
