@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, Download, FileText, RefreshCw } from 'lucide-react';
+import { CalendarDays, Download, FileText, RefreshCw, X } from 'lucide-react';
 import {
   animalKennel,
   animalName,
@@ -18,7 +18,6 @@ function ReportTable({ title, rows, columns, emptyText }) {
   return (
     <section className="reportPanel">
       <h2>{title}</h2>
-
       {rows.length === 0 ? (
         <p className="reportEmpty">{emptyText}</p>
       ) : (
@@ -43,21 +42,35 @@ function ReportTable({ title, rows, columns, emptyText }) {
   );
 }
 
-export function Reports() {
+export function Reports({ data }) {
   const today = todayDateString();
   const [startDate, setStartDate] = useState(addDays(today, -7));
   const [endDate, setEndDate] = useState(today);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState({ cleaning: [], medication: [], quarantine: [] });
   const [message, setMessage] = useState('');
+  const [catSearch, setCatSearch] = useState('');
+  const [selectedCat, setSelectedCat] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const animals = data?.animals || [];
+
+  const filteredAnimals = useMemo(() => {
+    if (!catSearch.trim()) return [];
+    const q = catSearch.toLowerCase();
+    const results = animals.filter(a =>
+      a.name.toLowerCase().includes(q)
+    ).slice(0, 8);
+    console.log('search results for', q, results.map(a => ({ name: a.name, kennel: a.kennel })));
+    return results;
+  }, [animals, catSearch]);
 
   async function loadReport() {
     setLoading(true);
     setMessage('');
-
     try {
-      const data = await fetchDailyReport({ startDate, endDate });
-      setReport(data);
+      const result = await fetchDailyReport({ startDate, endDate });
+      setReport(result);
       setMessage('Report loaded.');
     } catch (err) {
       console.error(err);
@@ -67,16 +80,25 @@ export function Reports() {
     }
   }
 
+  const filteredReport = useMemo(() => {
+    if (!selectedCat) return report;
+    return {
+      cleaning: report.cleaning.filter(r => r.animal_id === selectedCat.id),
+      medication: report.medication.filter(r => r.animal_id === selectedCat.id),
+      quarantine: report.quarantine.filter(r => r.animal_id === selectedCat.id)
+    };
+  }, [report, selectedCat]);
+
   const totals = useMemo(() => ({
-    cleaning: report.cleaning.length,
-    meds: report.medication.length,
-    quarantine: report.quarantine.length
-  }), [report]);
+    cleaning: filteredReport.cleaning.length,
+    meds: filteredReport.medication.length,
+    quarantine: filteredReport.quarantine.length
+  }), [filteredReport]);
 
   function exportCsv() {
     const rows = [
       ['Type', 'Date', 'Shift', 'Kennel', 'Animal', 'Task/Medication', 'Signed By', 'Notes', 'Time'],
-      ...report.cleaning.map(row => [
+      ...filteredReport.cleaning.map(row => [
         'Cleaning/Feeding/Watering',
         row.care_date,
         row.shift,
@@ -87,7 +109,7 @@ export function Reports() {
         row.notes || '',
         row.created_at
       ]),
-      ...report.medication.map(row => [
+      ...filteredReport.medication.map(row => [
         'Medication',
         row.care_date,
         row.shift,
@@ -98,20 +120,21 @@ export function Reports() {
         row.notes || row.medications?.dosage_notes || '',
         row.created_at
       ]),
-      ...report.quarantine.map(row => [
+      ...filteredReport.quarantine.map(row => [
         'Quarantine Checkoff',
         row.care_date,
         '',
         animalKennel(row),
         animalName(row),
-        row.check_type === 'paper_done' ? 'Paper checkoff complete' : row.check_type,
+        row.check_type === 'checklist_AM' ? 'AM Checklist' :
+        row.check_type === 'checklist_PM' ? 'PM Checklist' : row.check_type,
         row.checked_by,
         row.notes || '',
         row.created_at
       ])
     ];
-
-    downloadCsv(`kennelcheck-report-${startDate}-to-${endDate}.csv`, rows);
+    const catLabel = selectedCat ? `-${selectedCat.name.replace(/\s+/g, '_')}` : '';
+    downloadCsv(`kennelcheck-report${catLabel}-${startDate}-to-${endDate}.csv`, rows);
   }
 
   return (
@@ -120,7 +143,7 @@ export function Reports() {
         <div>
           <p>Binx-Q</p>
           <h1>Daily Care Report</h1>
-          <small>Cleaning AM/PM, medication sign-offs, and quarantine paper checkoffs.</small>
+          <small>Cleaning AM/PM, medication sign-offs, and quarantine check-offs.</small>
         </div>
         <FileText size={34}/>
       </section>
@@ -136,6 +159,48 @@ export function Reports() {
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
         </label>
 
+        {/* Cat search */}
+        <label style={{ position: 'relative' }}>
+          Filter by Cat
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              value={selectedCat ? selectedCat.name : catSearch}
+              onChange={e => {
+                setCatSearch(e.target.value);
+                setSelectedCat(null);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Search cat name..."
+            />
+            {selectedCat && (
+              <button
+                type="button"
+                onClick={() => { setSelectedCat(null); setCatSearch(''); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X size={16}/>
+              </button>
+            )}
+          </div>
+          {showDropdown && filteredAnimals.length > 0 && (
+            <div className="catSearchDropdown">
+              {filteredAnimals.map(animal => (
+                <button
+                  key={animal.id}
+                  type="button"
+                  className="catSearchOption"
+                  onClick={() => {
+                    setSelectedCat(animal);
+                    setCatSearch('');
+                    setShowDropdown(false);
+                  }}>
+                  <b>{animal.name}</b>
+                </button>
+              ))}
+            </div>
+          )}
+        </label>
+
         <button type="button" className="roundPrimary" onClick={loadReport} disabled={loading}>
           <RefreshCw size={17}/>
           {loading ? 'Loading...' : 'Run Report'}
@@ -149,6 +214,13 @@ export function Reports() {
 
       {message && <p className={message.includes('failed') ? 'error' : 'success'}>{message}</p>}
 
+      {selectedCat && (
+        <section className="reportCatBanner">
+          <b>Showing results for: {selectedCat.name}</b>
+          <small>{selectedCat.kennel || 'No kennel'} · {selectedCat.status}</small>
+        </section>
+      )}
+
       <section className="reportStats">
         <div><b>{totals.cleaning}</b><small>Cleaning Signoffs</small></div>
         <div><b>{totals.meds}</b><small>Medication Signoffs</small></div>
@@ -157,7 +229,7 @@ export function Reports() {
 
       <ReportTable
         title="AM/PM Cleaning, Feeding, Watering"
-        rows={report.cleaning}
+        rows={filteredReport.cleaning}
         emptyText="No cleaning sign-offs for this date range."
         columns={[
           { key: 'date', label: 'Date', render: row => row.care_date },
@@ -171,7 +243,7 @@ export function Reports() {
 
       <ReportTable
         title="Medication Sign-Offs"
-        rows={report.medication}
+        rows={filteredReport.medication}
         emptyText="No medication sign-offs for this date range."
         columns={[
           { key: 'date', label: 'Date', render: row => row.care_date },
@@ -186,13 +258,17 @@ export function Reports() {
 
       <ReportTable
         title="Quarantine Check-Offs"
-        rows={report.quarantine}
+        rows={filteredReport.quarantine}
         emptyText="No quarantine check-offs for this date range."
         columns={[
           { key: 'date', label: 'Date', render: row => row.care_date },
           { key: 'kennel', label: 'Kennel', render: animalKennel },
           { key: 'animal', label: 'Animal', render: animalName },
-          { key: 'task', label: 'Task', render: row => row.check_type === 'paper_done' ? 'Paper done' : row.check_type },
+          { key: 'task', label: 'Task', render: row =>
+            row.check_type === 'checklist_AM' ? 'AM Checklist' :
+            row.check_type === 'checklist_PM' ? 'PM Checklist' :
+            row.check_type === 'paper_done' ? 'Paper done' : row.check_type
+          },
           { key: 'by', label: 'Checked By', render: row => row.checked_by },
           { key: 'time', label: 'Time', render: row => new Date(row.created_at).toLocaleString() }
         ]}

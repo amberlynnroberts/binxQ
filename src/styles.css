@@ -1073,6 +1073,7 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   padding: 14px;
   display: grid;
   gap: 12px;
+  overflow: visible;
 }
 
 .reportControls label {
@@ -1080,6 +1081,8 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   gap: 6px;
   font-weight: 900;
   color: var(--round-muted);
+  position: relative;
+  overflow: visable;
 }
 
 .reportControls input {
@@ -2105,6 +2108,53 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
+}
+
+.catSearchOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--round-line);
+  cursor: pointer;
+  text-align: left;
+  color: var(--round-text);
+}
+
+.catSearchOption:hover {
+  background: var(--hover);
+}
+
+.catSearchDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--round-card);
+  border: 1px solid var(--round-line);
+  border-radius: 8px;
+  z-index: 9999;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.catSearchOption:hover {
+  background: rgba(255,255,255,0.06);
+  color: white;
+}
+
+.reportCatBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--blue-soft);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
 }
 
 .badge.green { background: #d1fae5; color: #065f46; }

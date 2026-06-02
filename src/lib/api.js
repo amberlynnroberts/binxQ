@@ -80,8 +80,10 @@ const animals = (appAnimals || [])
     dose: m.dosage_notes || '',
     schedule: m.schedule || '',
     nextDue: m.next_due || '',
+    startDate: m.start_date || null,
+    endDate: m.end_date || null,
     active: m.active
-  }));
+  })); 
 
   const notes = (notesRows || []).map(n => ({
     id: n.id,

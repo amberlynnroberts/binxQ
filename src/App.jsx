@@ -100,7 +100,12 @@ export default function App() {
 
   return (
     <PasscodeGate>
-      <RoundsShell page={page} setPage={setPage} animalView={animalView} setAnimalView={setAnimalView}>
+      <RoundsShell 
+        page={page} 
+        setPage={setPage} 
+        animalView={animalView} 
+        setAnimalView={setAnimalView}
+        onMedRound={() => startRound('med', 'AM')}>
         <button
           className="floatingFeedback"
           onClick={() => setShowFeedback(true)}>
@@ -132,7 +137,7 @@ export default function App() {
 
         {page === 'round-kennels' && (
           <RoundKennels
-            data={visibleData}
+            data={data}  // unfiltered instead of visibleData
             roundType={activeRound.type}
             shift={activeRound.shift}
             setPage={setPage}
@@ -143,7 +148,7 @@ export default function App() {
 
         {page === 'round-runner' && (
           <RoundRunner
-            data={visibleData}
+            data={data}  // unfiltered
             roundType={activeRound.type}
             shift={activeRound.shift}
             setPage={setPage}
@@ -249,7 +254,7 @@ export default function App() {
         )}
         
         {page === 'reports' && (
-          <Reports />
+          <Reports data={data} />
         )}
 
         {page === 'text-alert' && <TextAlert />}

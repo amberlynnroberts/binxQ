@@ -1,9 +1,5 @@
-import {
-  fetchDailyCareSignoffs,
-  signOffCleaning,
-  signOffMedication,
-  todayDateString
-} from './dailyCareApi';
+import { fetchDailyCareSignoffs, signOffCleaning, signOffMedication, todayDateString } from './dailyCareApi';
+import { medNeededForShift } from './medUtils';
 
 export function buildCareRoundItems(animals = [], signoffs = [], shift = 'AM') {
   const done = new Set((signoffs || []).filter(row => row.shift === shift).map(row => row.animal_id));
@@ -21,7 +17,7 @@ export function buildMedicationRoundItems(animals = [], meds = [], signoffs = []
   const animalById = new Map(animals.map(animal => [animal.id, animal]));
 
   return (meds || [])
-    .filter(med => med.active)
+    .filter(med => med.active && medNeededForShift(med, shift))
     .map(med => {
       const animal = animalById.get(med.animalId);
       if (!animal) return null;

@@ -53,20 +53,17 @@ export async function fetchDailyReport({ startDate, endDate }) {
   };
 }
 
-export async function signOffQuarantinePaper({ animalId, careDate = todayDateString(), checkedBy, notes = '' }) {
+export async function signOffQuarantinePaper({ careDate = todayDateString(), checkedBy, notes = '', shift = 'AM' }) {
   if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
 
   const { data, error } = await supabase
     .from('quarantine_checkoffs')
     .upsert({
-      animal_id: animalId,
       care_date: careDate,
-      check_type: 'paper_done',
+      check_type: `checklist_${shift}`,
       checked_by: checkedBy || 'Unknown',
       notes
-    }, {
-      onConflict: 'animal_id,care_date,check_type'
-    })
+    }, { onConflict: 'care_date,check_type' })
     .select()
     .single();
 

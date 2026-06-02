@@ -2,22 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {CheckCircle2, ClipboardCheck, Moon, Pill, RefreshCw, Sun, Trash2, Sparkles} from 'lucide-react';
 import {fetchDailyCareSignoffs, removeCleaningSignoff, removeMedicationSignoff, signOffCleaning, signOffMedication, todayDateString} from '../lib/dailyCareApi';
 import { ArrowLeft } from 'lucide-react';
-
-function medNeededForShift(med, shift) {
-  const schedule = String(med.schedule || med.nextDue || '').toLowerCase();
-
-  if (shift === 'AM') {
-    return schedule.includes('am') || schedule.includes('morning') || schedule.includes('daily') || schedule.includes('every 12') || schedule.includes('every 8');
-  }
-
-  return schedule.includes('pm') || schedule.includes('evening') || schedule.includes('night') || schedule.includes('every 12') || schedule.includes('every 8');
-}
+import { medNeededForShift } from '../lib/medUtils';
 
 function signedMap(rows, keyBuilder) {
   return new Map((rows || []).map(row => [keyBuilder(row), row]));
 }
 
 export function DailyCare({ data, reload }) {
+  console.log('meds received:', data?.meds);
+  console.log('animals received:', data?.animals);
   const [shift, setShift] = useState('AM');
   const [careDate, setCareDate] = useState(todayDateString());
   const [signedBy, setSignedBy] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
@@ -32,17 +25,18 @@ export function DailyCare({ data, reload }) {
   const cleaningMap = useMemo(() => signedMap(signoffs.cleaning, row => row.animal_id), [signoffs.cleaning]);
   const medMap = useMemo(() => signedMap(signoffs.medication, row => `${row.animal_id}:${row.medication_id}`), [signoffs.medication]);
 
-  const medsByAnimal = useMemo(() => {
-    const map = new Map();
-    for (const med of meds) {
-      if (!med.active) continue;
-      if (!medNeededForShift(med, shift)) continue;
-      const list = map.get(med.animalId) || [];
-      list.push(med);
-      map.set(med.animalId, list);
-    }
-    return map;
-  }, [meds, shift]);
+const medsByAnimal = useMemo(() => {
+  const map = new Map();
+  for (const med of meds) {
+    console.log('med:', med.name, 'active:', med.active, 'schedule:', med.schedule, 'neededForShift:', medNeededForShift(med, shift));
+    if (!med.active) continue;
+    if (!medNeededForShift(med, shift)) continue;
+    const list = map.get(med.animalId) || [];
+    list.push(med);
+    map.set(med.animalId, list);
+  }
+  return map;
+}, [meds, shift]);
 
   const stats = useMemo(() => {
     const cleaningTotal = animals.length;

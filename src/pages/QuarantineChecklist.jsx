@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ClipboardCheck } from 'lucide-react';
-import { signOffQuarantinePaper, todayDateString } from '../lib/reportsApi';
+import { signOffQuarantinePaper, fetchDailyReport, todayDateString } from '../lib/reportsApi';
 
 const checklists = {
   AM: [
@@ -34,8 +34,10 @@ export function QuarantineChecklist({ setPage }) {
   const [checked, setChecked] = useState({});
   const [initials, setInitials] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
   const [status, setStatus] = useState('');
+  const [completedShifts, setCompletedShifts] = useState({ AM: null, PM: null });
 
   const items = checklists[shift];
+  const alreadyCompleted = completedShifts[shift];
 
   const completedCount = useMemo(
     () => items.filter((_, i) => checked[`${shift}-${i}`]).length,
@@ -43,6 +45,17 @@ export function QuarantineChecklist({ setPage }) {
   );
 
   const allDone = completedCount === items.length;
+
+  useEffect(() => {
+    const today = todayDateString();
+    fetchDailyReport({ startDate: today, endDate: today })
+      .then(report => {
+        const am = report.quarantine.find(r => r.check_type === 'checklist_AM');
+        const pm = report.quarantine.find(r => r.check_type === 'checklist_PM');
+        setCompletedShifts({ AM: am || null, PM: pm || null });
+      })
+      .catch(console.error);
+  }, []);
 
   function toggleItem(index) {
     const key = `${shift}-${index}`;
@@ -71,12 +84,13 @@ export function QuarantineChecklist({ setPage }) {
     localStorage.setItem('kennelcheck_signed_by', initials.trim());
 
     await signOffQuarantinePaper({
-      animalId: null,
       careDate: todayDateString(),
       checkedBy: initials.trim(),
+      shift,
       notes: `${shift} quarantine checklist completed`
     });
 
+    setCompletedShifts(prev => ({ ...prev, [shift]: { checked_by: initials.trim() } }));
     setStatus(`${shift} checklist complete.`);
   }
 
@@ -97,6 +111,7 @@ export function QuarantineChecklist({ setPage }) {
           onClick={() => setShift('AM')}
         >
           AM Checklist
+          {completedShifts.AM && <CheckCircle2 size={14} style={{ marginLeft: 6 }} />}
         </button>
 
         <button
@@ -105,61 +120,73 @@ export function QuarantineChecklist({ setPage }) {
           onClick={() => setShift('PM')}
         >
           PM Checklist
+          {completedShifts.PM && <CheckCircle2 size={14} style={{ marginLeft: 6 }} />}
         </button>
       </section>
 
-      <section className="quarantineCard">
-        <div className="quarantineCardTop">
-          <div>
-            <h2>{shift} Checklist</h2>
-            <p>{completedCount} of {items.length} completed</p>
+      {alreadyCompleted ? (
+        <section className="quarantineCard">
+          <div className="quarantineComplete">
+            <CheckCircle2 size={40} />
+            <h2>{shift} Checklist Complete</h2>
+            <p>Signed off by <b>{alreadyCompleted.checked_by}</b></p>
+            <p>All {items.length} tasks completed.</p>
           </div>
+        </section>
+      ) : (
+        <>
+          <section className="quarantineCard">
+            <div className="quarantineCardTop">
+              <div>
+                <h2>{shift} Checklist</h2>
+                <p>{completedCount} of {items.length} completed</p>
+              </div>
+              <button type="button" className="selectAllBtn" onClick={selectAll}>
+                Select All
+              </button>
+            </div>
 
-          <button type="button" className="selectAllBtn" onClick={selectAll}>
-            Select All
-          </button>
-        </div>
+            <div className="quarantineCheckboxList">
+              {items.map((item, index) => {
+                const key = `${shift}-${index}`;
+                const done = Boolean(checked[key]);
+                return (
+                  <label key={key} className={done ? 'quarantineCheckRow done' : 'quarantineCheckRow'}>
+                    <input
+                      type="checkbox"
+                      checked={done}
+                      onChange={() => toggleItem(index)}
+                    />
+                    <span>{item}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
 
-        <div className="quarantineCheckboxList">
-          {items.map((item, index) => {
-            const key = `${shift}-${index}`;
-            const done = Boolean(checked[key]);
+          <section className="quarantineCard signoffCard">
+            <label className="roundInput">
+              <ClipboardCheck size={17} />
+              <input
+                value={initials}
+                onChange={e => setInitials(e.target.value)}
+                placeholder="Initials"
+              />
+            </label>
 
-            return (
-              <label key={key} className={done ? 'quarantineCheckRow done' : 'quarantineCheckRow'}>
-                <input
-                  type="checkbox"
-                  checked={done}
-                  onChange={() => toggleItem(index)}
-                />
-                <span>{item}</span>
-              </label>
-            );
-          })}
-        </div>
-      </section>
+            <button
+              type="button"
+              className="roundPrimary"
+              onClick={completeChecklist}
+            >
+              <CheckCircle2 size={18} />
+              Mark {shift} Complete
+            </button>
 
-      <section className="quarantineCard signoffCard">
-        <label className="roundInput">
-          <ClipboardCheck size={17}/>
-          <input
-            value={initials}
-            onChange={e => setInitials(e.target.value)}
-            placeholder="Initials"
-          />
-        </label>
-
-        <button
-          type="button"
-          className="roundPrimary"
-          onClick={completeChecklist}
-        >
-          <CheckCircle2 size={18}/>
-          Mark {shift} Complete
-        </button>
-
-        {status && <p className={status.includes('complete') ? 'success' : 'error'}>{status}</p>}
-      </section>
+            {status && <p className={status.includes('complete') ? 'success' : 'error'}>{status}</p>}
+          </section>
+        </>
+      )}
     </main>
   );
 }
