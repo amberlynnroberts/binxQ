@@ -5,9 +5,10 @@ import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
 import { signOffQuarantinePaper } from '../lib/reportsApi';
 import { formatAge } from '../lib/formatAge';
+import { medNeededForShift } from '../lib/medUtils';
+import { signOffMedication } from '../lib/dailyCareApi';
 
 function ProgressBar({ current, total }) {
-  const [kennelDraft, setKennelDraft] = useState('');
   const pct = total ? Math.round((current / total) * 100) : 0;
   return (
     <div className="roundProgressBlock">
@@ -39,14 +40,15 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [skipped, setSkipped] = useState(0);
-
   const [kennelDraft, setKennelDraft] = useState('');
-  
+  const [medBusy, setMedBusy] = useState('');
+
   const animals = data?.animals || [];
   const meds = data?.meds || [];
 
   async function load() {
     const rows = await loadRoundSignoffs(shift, todayDateString());
+    console.log('loaded signoffs:', rows.medication);
     setSignoffs(rows);
   }
 
@@ -61,23 +63,38 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }, [roundType, animals, meds, signoffs, shift]);
 
   const selectedItem = useMemo(() => {
-  if (!selectedRoundAnimal) return null;
-
-  if (roundType === 'med') {
-    return allItems.find(item =>
-      item.animal.id === selectedRoundAnimal &&
-      (!selectedRoundMedication || item.med?.id === selectedRoundMedication)
-    );
-  }
-
-  return allItems.find(item => item.animal.id === selectedRoundAnimal);
-}, [allItems, selectedRoundAnimal, selectedRoundMedication, roundType]);
+    if (!selectedRoundAnimal) return null;
+    if (roundType === 'med') {
+      return allItems.find(item =>
+        item.animal.id === selectedRoundAnimal &&
+        (!selectedRoundMedication || item.med?.id === selectedRoundMedication)
+      );
+    }
+    return allItems.find(item => item.animal.id === selectedRoundAnimal);
+  }, [allItems, selectedRoundAnimal, selectedRoundMedication, roundType]);
 
   const items = allItems.filter(item => !item.done);
   const total = allItems.length || items.length;
   const item = selectedItem || items[index] || items[0];
   const completed = Math.max(0, total - items.length);
   const isDone = !item;
+
+  // Meds for current animal in care round
+  const animalMeds = useMemo(() => {
+    if (roundType !== 'care' || !item?.animal) return [];
+    return meds.filter(m =>
+      m.active &&
+      m.animalId === item.animal.id &&
+      medNeededForShift(m, shift)
+    );
+  }, [roundType, item?.animal?.id, meds, shift]);
+
+  const completedMedKeys = useMemo(() => {
+    return new Set((signoffs.medication || [])
+      .filter(r => r.shift === shift)
+      .map(r => `${r.animal_id}:${r.medication_id}`)
+    );
+  }, [signoffs.medication, shift]);
 
   function saveName() {
     const name = signedBy.trim();
@@ -87,21 +104,38 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }
 
   useEffect(() => {
-  setKennelDraft(item?.animal?.kennel || '');
-}, [item?.animal?.id]);
+    setKennelDraft(item?.animal?.kennel || '');
+  }, [item?.animal?.id]);
 
-async function markPaperDone() {
-  if (!item?.animal || !saveName()) return;
-
-  await signOffQuarantinePaper({
-    animalId: item.animal.id,
-    careDate: todayDateString(),
-    checkedBy: signedBy,
-    notes: 'Paper checklist completed'
-  });
-
-  await reload?.();
-}
+  async function toggleMed(med) {
+    console.log('toggleMed called', { signedBy, medId: med.id, animalId: item.animal.id });
+    if (!saveName()) {
+      console.log('saveName failed - no initials');
+      return;
+    }
+    const key = `${item.animal.id}:${med.id}`;
+    const alreadyDone = completedMedKeys.has(key);
+    console.log('alreadyDone:', alreadyDone, 'key:', key);
+    try {
+      setMedBusy(med.id);
+      if (!alreadyDone) {
+        const result = await signOffMedication({
+          animalId: item.animal.id,
+          medicationId: med.id,
+          shift,
+          careDate: todayDateString(),
+          givenBy: signedBy,
+          notes: note || ''
+        });
+        console.log('signOffMedication result:', result);
+      }
+      await load();
+    } catch (err) {
+      console.error('toggleMed error:', err);
+    } finally {
+      setMedBusy('');
+    }
+  }
 
   async function completeAndNext() {
     if (!item || !saveName()) return;
@@ -118,22 +152,17 @@ async function markPaperDone() {
     }
   }
 
-
   async function saveKennelNumber() {
-  if (!item?.animal) return;
-
-  const nextKennel = kennelDraft.trim();
-
-  if (!nextKennel || nextKennel === item.animal.kennel) return;
-
-  await updateAnimalKennelNumber({
-    animalId: item.animal.id,
-    shelterluvId: item.animal.shelterluv_id,
-    kennelNumber: nextKennel
-  });
-
-  await reload?.();
-}
+    if (!item?.animal) return;
+    const nextKennel = kennelDraft.trim();
+    if (!nextKennel || nextKennel === item.animal.kennel) return;
+    await updateAnimalKennelNumber({
+      animalId: item.animal.id,
+      shelterluvId: item.animal.shelterluv_id,
+      kennelNumber: nextKennel
+    });
+    await reload?.();
+  }
 
   function skip() {
     setSkipped(prev => prev + 1);
@@ -155,13 +184,7 @@ async function markPaperDone() {
             type="button"
             className="roundSecondary"
             onClick={() => {
-              setRoundSummary({
-                completed,
-                skipped,
-                roundType,
-                shift
-              });
-
+              setRoundSummary({ completed, skipped, roundType, shift });
               setPage('round-summary');
             }}>View Summary</button>
           <button type="button" className="roundPrimary" onClick={() => setPage('dashboard')}>Back to Dashboard</button>
@@ -180,20 +203,56 @@ async function markPaperDone() {
 
       <ProgressBar current={completed + 1} total={total || items.length}/>
       <AnimalHero animal={item.animal}/>
-        <label className="roundInput">
-          <span className="roundInputLabel">Kennel</span>
-          <input
-            value={kennelDraft}
-            onChange={e => setKennelDraft(e.target.value)}
-            placeholder="Kennel number"
-          />
-        </label>
+
+      <label className="roundInput">
+        <span className="roundInputLabel">Kennel</span>
+        <input
+          value={kennelDraft}
+          onChange={e => setKennelDraft(e.target.value)}
+          placeholder="Kennel number"
+        />
+      </label>
+
       {roundType === 'care' ? (
-        <section className="roundCheckGrid">
-          <div><CheckCircle2/><span>Cleaned</span></div>
-          <div><Droplets/><span>Water</span></div>
-          <div><Utensils/><span>Fed</span></div>
-        </section>
+        <>
+          <section className="roundCheckGrid">
+            <div><CheckCircle2/><span>Cleaned</span></div>
+            <div><Droplets/><span>Water</span></div>
+            <div><Utensils/><span>Fed</span></div>
+          </section>
+
+          {animalMeds.length > 0 && (
+            <section className="roundInlineMeds">
+              <div className="roundInlineMedsHeader">
+                <Pill size={16}/>
+                <b>{shift} Medications</b>
+              </div>
+
+              {animalMeds.map(med => {
+                const key = `${item.animal.id}:${med.id}`;
+                const done = completedMedKeys.has(key);
+                console.log('med row:', med.name, 'key:', key, 'done:', done, 'completedMedKeys:', [...completedMedKeys]);
+                return (
+                  <div key={med.id} className={`roundInlineMedRow ${done ? 'done' : ''}`}>
+                    <div className="roundInlineMedInfo">
+                      <b>{med.name}</b>
+                      <small>{med.dose || 'No dosage'} · {med.schedule}</small>
+                    </div>
+                      <button
+                        type="button"
+                        className={done ? 'roundMedGivenBtn done' : 'roundMedGivenBtn'}
+                        onClick={() => {
+                          if (done || medBusy === med.id) return;
+                          toggleMed(med);
+                        }}>
+                        {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
+                      </button>
+                  </div>
+                );
+              })}
+            </section>
+          )}
+        </>
       ) : (
         <section className="roundMedicationCard">
           <div><h2>{item.med.name}</h2><p>{item.med.dose || 'No dosage instructions'}</p><small>{item.med.schedule || 'No schedule'}</small></div>
@@ -212,8 +271,6 @@ async function markPaperDone() {
       ) : (
         <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
       )}
-
-      <button type="button" className="roundSkip" onClick={skip}>Swipe left to skip</button>
     </main>
   );
 }

@@ -45,6 +45,14 @@ export default function App() {
     if (!selected && data.animals.length) setSelected(data.animals[0].id);
   }, [data.animals, selected]);
 
+  useEffect(() => {
+  const interval = setInterval(() => {
+    reload();
+  }, 60_000); // every 60 seconds
+
+  return () => clearInterval(interval);
+}, [reload]);
+
   const animal = data.animals.find(a => a.id === selected) || data.animals[0];
 
   const alerts = useMemo(() => {

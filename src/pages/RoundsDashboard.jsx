@@ -7,11 +7,11 @@ import {
   ClipboardCheck,
   ChevronRight,
   Pill,
-  Syringe
 } from 'lucide-react';
 import { fetchUpcomingVetEvents, summarizeVetEvents } from '../lib/vetEventsApi';
+import { fetchDailyReport } from '../lib/reportsApi';
 
-function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled }) {
+function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges }) {
   return (
     <button
       type="button"
@@ -23,7 +23,6 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
         <span className="roundStartIcon">
           <Icon size={31} />
         </span>
-
         {complete && (
           <span className="roundCompleteBadge">
             <CheckCircle2 size={22} />
@@ -31,11 +30,22 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
         )}
       </span>
 
-      <span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <b>{title}</b>
         <small>{subtitle}</small>
-        <small>{complete ? 'DONE!' : count}</small>
-      </span>
+        {badges ? (
+          <div style={{ display: 'flex', flexDirection: 'row', gap: 6, marginTop: 4 }}>
+            {badges.map(b => (
+              <span key={b.label} className={`checklistBadge ${b.done ? 'done' : 'pending'}`}>
+                {b.done ? <CheckCircle2 size={12} /> : null}
+                {b.label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <small>{complete ? 'DONE!' : count}</small>
+        )}
+      </div>
 
       <ChevronRight />
     </button>
@@ -53,16 +63,15 @@ function GlanceCard({ label, value, tone }) {
 
 function getGreeting() {
   const hour = new Date().getHours();
-
   if (hour >= 5 && hour < 12) return 'Good morning! 👋';
   if (hour >= 12 && hour < 17) return 'Good afternoon! ☀️';
-
   return 'Good evening! 🌙';
 }
 
 export function RoundsDashboard({ data, setPage, startRound }) {
   const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
   const [upcomingVetEvents, setUpcomingVetEvents] = useState([]);
+  const [checklistSignoffs, setChecklistSignoffs] = useState({ AM: null, PM: null });
 
   const animals = data?.animals || [];
   const meds = (data?.meds || []).filter(m => m.active);
@@ -76,6 +85,17 @@ export function RoundsDashboard({ data, setPage, startRound }) {
   useEffect(() => {
     fetchUpcomingVetEvents({ days: 7 })
       .then(setUpcomingVetEvents)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const today = todayDateString();
+    fetchDailyReport({ startDate: today, endDate: today })
+      .then(report => {
+        const am = report.quarantine.find(r => r.check_type === 'checklist_AM');
+        const pm = report.quarantine.find(r => r.check_type === 'checklist_PM');
+        setChecklistSignoffs({ AM: am || null, PM: pm || null });
+      })
       .catch(console.error);
   }, []);
 
@@ -113,6 +133,13 @@ export function RoundsDashboard({ data, setPage, startRound }) {
 
   const vetSummary = summarizeVetEvents(upcomingVetEvents);
 
+  const checklistBadges = [
+    { label: 'AM', done: Boolean(checklistSignoffs.AM) },
+    { label: 'PM', done: Boolean(checklistSignoffs.PM) }
+  ];
+
+  const checklistComplete = Boolean(checklistSignoffs.AM && checklistSignoffs.PM);
+
   return (
     <main className="roundsDashboard cleanDashboard">
       <section className="roundsWelcome cleanHero">
@@ -143,17 +170,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
           </span>
         </button>
 
-        {/* <div className="vetQuickActions">
-          <button type="button" onClick={() => setPage('vet-calendar')}>
-            💉 Add Vaccine
-          </button>
-
-          <button type="button" onClick={() => setPage('vet-calendar')}>
-            📅 Add Appointment
-          </button>
-        </div> */}
-
-        <small>Choose a round to start today’s care.</small>
+        <small>Choose a round to start today's care.</small>
       </section>
 
       <section>
@@ -174,7 +191,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
             icon={ClipboardCheck}
             title="PM Care Round"
             subtitle={pmUnlocked ? 'Cleaning, Feeding, Water' : 'Available at 3PM'}
-            count={pmUnlocked ? `${pmPercent}% complete` : 'Not complete'}
+            count={pmUnlocked ? `${pmPercent}% complete` : 'Not yet available'}
             complete={pmComplete}
             tone="blue"
             disabled={!pmUnlocked}
@@ -182,15 +199,6 @@ export function RoundsDashboard({ data, setPage, startRound }) {
               if (pmUnlocked) startRound('care', 'PM');
             }}
           />
-
-          {/* <RoundCard
-            icon={Syringe}
-            title="Vet Calendar"
-            subtitle="Vaccines / appointments"
-            count={`${vetSummary.total} upcoming`}
-            tone="purple"
-            onClick={() => setPage('vet-calendar')}
-          /> */}
 
           <RoundCard
             icon={Pill}
@@ -206,8 +214,9 @@ export function RoundsDashboard({ data, setPage, startRound }) {
             icon={ClipboardCheck}
             title="Quarantine Checklist"
             subtitle="AM / PM room procedures"
-            count="Tap to complete"
+            complete={checklistComplete}
             tone="purple"
+            badges={checklistBadges}
             onClick={() => setPage('quarantine-checklist')}
           />
         </div>
