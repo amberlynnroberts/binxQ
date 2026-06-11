@@ -227,7 +227,7 @@ export function RoundKennels({
           )}
 
           {/* Quarantine kennel groups */}
-          {kennelGroups.map(({ kennel, cats }) => {
+            {kennelGroups.filter(({ cats }) => cats.length > 0).map(({ kennel, cats }) => {
             const progress = getProgressForCats(cats);
             return (
               <section className="roundKennelSection" key={kennel}>

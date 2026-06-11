@@ -195,8 +195,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   return (
     <main className="roundsScreen small">
       <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('round-select')}><X size={20}/></button>
-        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
+      <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
         <span/>
       </div>
 

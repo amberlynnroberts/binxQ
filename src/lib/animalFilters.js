@@ -3,8 +3,12 @@ export const archivedShelterluvStatuses = [
   'adopted',
   'healthy in home',
   'deceased',
+  'died in care',
+  'euthanized',
   'returned to owner',
-  'euthanized'
+  'released to colony',
+  'released to wild',
+  'released to colony / wild',
 ];
 
 export function getAnimalStatus(animal) {
