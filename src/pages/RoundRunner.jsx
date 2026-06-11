@@ -79,7 +79,6 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   const completed = Math.max(0, total - items.length);
   const isDone = !item;
 
-  // Meds for current animal in care round
   const animalMeds = useMemo(() => {
     if (roundType !== 'care' || !item?.animal) return [];
     return meds.filter(m =>
@@ -209,6 +208,8 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
         <input
           value={kennelDraft}
           onChange={e => setKennelDraft(e.target.value)}
+          onBlur={saveKennelNumber}
+          onKeyDown={e => { if (e.key === 'Enter') { saveKennelNumber(); e.target.blur(); } }}
           placeholder="Kennel number"
         />
       </label>
@@ -238,15 +239,15 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                       <b>{med.name}</b>
                       <small>{med.dose || 'No dosage'} · {med.schedule}</small>
                     </div>
-                      <button
-                        type="button"
-                        className={done ? 'roundMedGivenBtn done' : 'roundMedGivenBtn'}
-                        onClick={() => {
-                          if (done || medBusy === med.id) return;
-                          toggleMed(med);
-                        }}>
-                        {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
-                      </button>
+                    <button
+                      type="button"
+                      className={done ? 'roundMedGivenBtn done' : 'roundMedGivenBtn'}
+                      onClick={() => {
+                        if (done || medBusy === med.id) return;
+                        toggleMed(med);
+                      }}>
+                      {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
+                    </button>
                   </div>
                 );
               })}

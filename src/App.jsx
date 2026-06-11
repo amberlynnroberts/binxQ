@@ -184,6 +184,7 @@ export default function App() {
             add={() => setPage('add')}
             animalView={animalView}
             setAnimalView={setAnimalView}
+            onAnimalUpdated={reload}
           />
         )}
 
