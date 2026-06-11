@@ -5,7 +5,7 @@ import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
 import { useEffect, useState } from 'react';
 import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
-import { animalHasEndOfDayCleaningWarning, todayDateString } from '../lib/careTaskRules';
+import { todayDateString } from '../lib/careTaskRules';
 import { formatAge } from '../lib/formatAge';
 import { getKennelColorClass } from '../lib/kennelColors.js';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
@@ -38,17 +38,14 @@ function KennelEdit({ animal, onSaved }) {
 
   function cancel(e) {
     e.stopPropagation();
-    setValue(animal.kennel_number ?? '');
+    setValue(animal.kennel ?? '');
     setError('');
     setEditing(false);
   }
 
   if (editing) {
     return (
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-      >
+      <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <input
           autoFocus
           value={value}
@@ -58,42 +55,54 @@ function KennelEdit({ animal, onSaved }) {
             if (e.key === 'Escape') cancel(e);
           }}
           placeholder="Kennel #"
-          style={{ width: 80, fontSize: 13, padding: '2px 6px', borderRadius: 6, border: '1px solid #ccc' }}
+          style={{ width: 72, fontSize: 13, padding: '4px 8px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.95)', color: 'white' }}
         />
-        <button
-          onClick={save}
-          disabled={saving}
-          style={{ color: '#1D9E75', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          {saving ? '…' : <Check size={14} />}
+        <button onClick={save} disabled={saving} style={{ color: '#39d353', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          {saving ? '…' : <Check size={15} />}
         </button>
-        <button
-          onClick={cancel}
-          style={{ color: '#aaa', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <X size={14} />
+        <button onClick={cancel} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <X size={15} />
         </button>
-        {error && <small style={{ color: 'red' }}>{error}</small>}
+        {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
       </div>
     );
   }
 
   return (
     <button
-      onClick={e => { e.stopPropagation(); setEditing(true); }}
+      onClick={e => { e.stopPropagation(); setEditing(true); setValue(animal.kennel ?? ''); }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 4,
-        background: '#f0f0f0', border: '1px solid #ddd',
-        borderRadius: 6, padding: '3px 8px',
-        cursor: 'pointer', fontSize: 12, color: '#444',
-        marginRight: 8
+        display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(148,163,184,0.18)',
+        borderRadius: 8, padding: '5px 10px',
+        cursor: 'pointer', fontSize: 12,
+        color: animal.kennel && animal.kennel !== '?' ? '#cbd5e1' : '#64748b',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}
       title="Edit kennel"
     >
-      <Pencil size={12} />
-      {animal.kennel_number ?? 'Set kennel'}
+      <Pencil size={11} />
+      {animal.kennel && animal.kennel !== '?' ? animal.kennel : 'Set kennel'}
     </button>
   );
+}
+
+function statusLabel(animal, animalView) {
+  if (animalView === 'quarantine') {
+    return animal.kennel && animal.kennel !== '?' ? `Kennel ${animal.kennel.replace(/\D/g, '') || animal.kennel}` : 'No kennel assigned';
+  }
+  if (animalView === 'rescue') return 'Cat Lounge';
+  // archived — show a cleaner status
+  const s = String(animal.shelterluv_status || animal.status || '').trim();
+  if (!s) return '';
+  // shorten common long statuses
+  if (s.toLowerCase().includes('healthy in home')) return 'Adopted / In Home';
+  if (s.toLowerCase().includes('transferred')) return 'Transferred';
+  if (s.toLowerCase() === 'deceased') return 'Deceased';
+  if (s.toLowerCase().includes('released')) return 'Released';
+  return s.length > 30 ? s.slice(0, 30) + '…' : s;
 }
 
 export function Kennels({
@@ -110,7 +119,7 @@ export function Kennels({
   const counts = getAnimalFilterCounts(allAnimals);
 
   const list = data.animals.filter(a =>
-    `${a.name} ${a.kennel_number} ${a.status} ${a.shelterluv_status || ''} ${a.desc}`
+    `${a.name} ${a.kennel} ${a.status} ${a.shelterluv_status || ''} ${a.desc}`
       .toLowerCase()
       .includes(query.toLowerCase())
   );
@@ -183,28 +192,35 @@ export function Kennels({
         )}
 
         {list.map(a => (
-          <div className="row" key={a.id} style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="row" key={a.id} onClick={() => select(a.id)} style={{ width: '100%' }}>
             {animalView === 'quarantine' && (
-              <span className={`kennel ${getKennelColorClass(a.kennel_number)}`}>
-                {kennelShort(a.kennel_number)}
+              <span className={`kennel ${getKennelColorClass(a.kennel)}`}>
+                {kennelShort(a.kennel)}
               </span>
             )}
-            <button
-              style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              onClick={() => select(a.id)}
-            >
-              <AnimalThumb animal={a} />
-              <span style={{ flex: 1, textAlign: 'left' }}>
-                <b>{a.name}</b>
-                <small>{a.desc} • {a.sex} • {formatAge(a.age)}</small>
-                <small>{a.shelterluv_status}</small>
-              </span>
-            </button>
-            <div onClick={e => e.stopPropagation()} style={{ marginRight: 4 }}>
-              <KennelEdit animal={a} onSaved={onAnimalUpdated} />
-            </div>
-            <ChevronRight size={18} style={{ color: '#ccc', flexShrink: 0 }} onClick={() => select(a.id)} />
-          </div>
+
+            <AnimalThumb animal={a} />
+
+            <span style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+              <b style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {a.name}
+              </b>
+              <small style={{ display: 'block', color: 'var(--round-muted)' }}>
+                {a.desc} • {a.sex} • {formatAge(a.age)}
+              </small>
+              <small style={{ display: 'block', color: 'var(--round-muted)', marginTop: 2 }}>
+                {statusLabel(a, animalView)}
+              </small>
+            </span>
+
+            {animalView === 'quarantine' && (
+              <div onClick={e => e.stopPropagation()}>
+                <KennelEdit animal={a} onSaved={onAnimalUpdated} />
+              </div>
+            )}
+
+            <ChevronRight size={18} style={{ color: 'var(--round-muted)', flexShrink: 0 }} />
+          </button>
         ))}
       </div>
     </main>

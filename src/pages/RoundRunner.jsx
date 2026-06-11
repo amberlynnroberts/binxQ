@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X, Check } from 'lucide-react';
 import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, completeMedicationRoundItem, loadRoundSignoffs} from '../lib/roundsApi';
 import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
@@ -207,10 +207,28 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
         <input
           value={kennelDraft}
           onChange={e => setKennelDraft(e.target.value)}
-          onBlur={saveKennelNumber}
-          onKeyDown={e => { if (e.key === 'Enter') { saveKennelNumber(); e.target.blur(); } }}
+          onKeyDown={e => { if (e.key === 'Enter') saveKennelNumber(); }}
           placeholder="Kennel number"
         />
+        {kennelDraft !== (item?.animal?.kennel || '') && (
+          <button
+            type="button"
+            onClick={saveKennelNumber}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: '#39d353',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 4px',
+              flexShrink: 0,
+            }}
+            title="Save kennel"
+          >
+            <Check size={20} />
+          </button>
+        )}
       </label>
 
       {roundType === 'care' ? (
