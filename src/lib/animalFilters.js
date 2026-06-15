@@ -19,6 +19,21 @@ export function getAnimalStatus(animal) {
   ).trim().toLowerCase();
 }
 
+/**
+ * Check if an animal should be available for vet appointments
+ * Excludes: Deceased, Healthy in home
+ * Includes: Everything else (Quarantine, Sick, Lounge, etc.)
+ */
+export function isInCustodyAnimal(animal) {
+  const status = animal.shelterluv_status || animal.status || '';
+  
+  // Only exclude these two statuses
+  if (status.toLowerCase().includes('deceased')) return false;
+  if (status.toLowerCase().includes('healthy in home')) return false;
+  
+  return true;
+}
+
 export function isArchivedAnimal(animal) {
   return archivedShelterluvStatuses.includes(getAnimalStatus(animal));
 }

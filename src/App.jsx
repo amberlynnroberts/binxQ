@@ -210,7 +210,7 @@ export default function App() {
 
         {page === 'vet-calendar' && (
           <VetCalendar
-            data={visibleData}
+            data={data}
             setPage={setPage}
           />
         )}
@@ -227,7 +227,7 @@ export default function App() {
 
         {page === 'vet-tasks' && (
           <VetTasks
-            data={visibleData}
+            data={data}
             setPage={setPage}
           />
         )}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CalendarDays, CheckCircle2, Plus, Syringe, Trash2 } from 'lucide-react';
+import { isInCustodyAnimal } from '../lib/animalFilters';
 import { addVetTask, completeVetTask, deleteVetTask, fetchVetTasks, todayDateString } from '../lib/vetTasksApi';
 
 const blankTask = {
@@ -19,7 +20,11 @@ function getAnimalKennel(animals, animalId) {
 }
 
 export function VetTasks({ data, setPage }) {
-  const animals = data?.animals || [];
+  // Filter to only in-custody animals (exclude Deceased and Healthy in home)
+  const animals = useMemo(() => {
+    return (data?.animals || []).filter(isInCustodyAnimal);
+  }, [data]);
+
   const [tasks, setTasks] = useState([]);
   const [form, setForm] = useState(blankTask);
   const [message, setMessage] = useState('');

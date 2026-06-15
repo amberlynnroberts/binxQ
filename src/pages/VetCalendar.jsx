@@ -11,7 +11,7 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { isArchivedAnimal } from '../lib/animalFilters';
+import { isArchivedAnimal, isInCustodyAnimal } from '../lib/animalFilters';
 import {
   addVetEvent,
   completeVetEvent,
@@ -91,8 +91,11 @@ function QuickTemplateButton({ label, type, name, onClick }) {
 }
 
 export function VetCalendar({ data, setPage }) {
+  // Filter to only in-custody animals (exclude Deceased and Healthy in home)
   const animals = useMemo(() => {
-    return (data?.animals || []).filter(animal => !isArchivedAnimal(animal));
+    return (data?.animals || [])
+      .filter(animal => !isArchivedAnimal(animal))
+      .filter(isInCustodyAnimal);
   }, [data]);
 
   const [events, setEvents] = useState([]);
@@ -364,7 +367,7 @@ export function VetCalendar({ data, setPage }) {
           <div className="vetFormHeader">
             <div>
               <h2>Add Vet Event</h2>
-              <small>Choose any active rescue cat that is not archived/adopted.</small>
+              <small>Choose any cat in custody (not Deceased or Healthy in home).</small>
             </div>
 
             <button type="button" onClick={() => setShowAdd(false)}>
@@ -449,31 +452,6 @@ export function VetCalendar({ data, setPage }) {
           <button className="roundPrimary wide">Save Vet Event</button>
         </form>
       )}
-
-      {/* {grouped.length === 0 ? (
-        <section className="vetCalendarEmpty">
-          <CheckCircle2 size={34}/>
-          <h2>No vet events found</h2>
-          <p>Add a vaccine, appointment, surgery, or follow-up.</p>
-        </section>
-      ) : (
-        <div className="vetDateGroups improved">
-          {grouped.map(([date, eventsForDate]) => (
-            <section className="vetDateGroup improved" key={date}>
-              <div className="vetDateHeader">
-                <h2>{formatDateLabel(date)}</h2>
-                <span>{eventsForDate.length}</span>
-              </div>
-
-              <div className="vetEventList">
-                {eventsForDate.map(event => (
-                  <EventCard key={event.id} event={event}/>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )} */}
     </main>
   );
 }
