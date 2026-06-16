@@ -114,10 +114,11 @@ export function RoundsDashboard({ data, setPage, startRound }) {
   const amRemaining = careTasks.filter(t => t.shift === 'AM').length;
   const pmRemaining = careTasks.filter(t => t.shift === 'PM').length;
 
-  const pmUnlocked = nowHour >= 15;
+  const amUnlocked = nowHour >= 8;
+  const pmUnlocked = nowHour >= 14;
 
-  const amComplete = totalCats > 0 && amRemaining === 0;
-  const pmComplete = pmUnlocked && totalCats > 0 && pmRemaining === 0;
+  const amComplete = amUnlocked && careTasks.filter(t => t.shift === 'AM').length > 0 && amRemaining === 0;
+  const pmComplete = pmUnlocked && careTasks.filter(t => t.shift === 'PM').length > 0 && pmRemaining === 0;
 
   const amPercent = totalCats
     ? Math.round(((totalCats - amRemaining) / totalCats) * 100)
@@ -180,11 +181,14 @@ export function RoundsDashboard({ data, setPage, startRound }) {
           <RoundCard
             icon={ClipboardCheck}
             title="AM Care Round"
-            subtitle="Cleaning, Feeding, Water"
-            count={`${amPercent}% complete`}
-            complete={amComplete}
+            subtitle={amUnlocked ? 'Cleaning, Feeding, Water' : 'Available at 8AM'}
+            count={amUnlocked ? `${amPercent}% complete` : 'Not yet available'}
+            complete={false}
             tone="green"
-            onClick={() => startRound('care', 'AM')}
+            disabled={!amUnlocked}
+            onClick={() => {
+              if (amUnlocked) startRound('care', 'AM');
+            }}
           />
 
           <RoundCard
@@ -192,7 +196,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
             title="PM Care Round"
             subtitle={pmUnlocked ? 'Cleaning, Feeding, Water' : 'Available at 3PM'}
             count={pmUnlocked ? `${pmPercent}% complete` : 'Not yet available'}
-            complete={pmComplete}
+            complete={false}
             tone="blue"
             disabled={!pmUnlocked}
             onClick={() => {

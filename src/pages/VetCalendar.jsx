@@ -12,6 +12,7 @@ import {
   X
 } from 'lucide-react';
 import { isArchivedAnimal, isInCustodyAnimal } from '../lib/animalFilters';
+import { SearchableSelect } from '../components/SearchableSelect';
 import {
   addVetEvent,
   completeVetEvent,
@@ -91,7 +92,7 @@ function QuickTemplateButton({ label, type, name, onClick }) {
 }
 
 export function VetCalendar({ data, setPage }) {
-  // Filter to only in-custody animals (exclude Deceased and Healthy in home)
+  // Filter to only in-custody animals (exclude Adopted, Happy in Home, Deceased, Unavailable Foster)
   const animals = useMemo(() => {
     return (data?.animals || [])
       .filter(animal => !isArchivedAnimal(animal))
@@ -367,7 +368,7 @@ export function VetCalendar({ data, setPage }) {
           <div className="vetFormHeader">
             <div>
               <h2>Add Vet Event</h2>
-              <small>Choose any cat in custody (not Deceased or Healthy in home).</small>
+              <small>Choose any cat in custody (not Adopted, Happy in Home, Deceased, or Unavailable Foster).</small>
             </div>
 
             <button type="button" onClick={() => setShowAdd(false)}>
@@ -377,14 +378,14 @@ export function VetCalendar({ data, setPage }) {
 
           <label className="wide">
             Cat
-            <select value={form.animalId} onChange={e => setField('animalId', e.target.value)}>
-              <option value="">Select cat...</option>
-              {animals.map(animal => (
-                <option key={animal.id} value={animal.id}>
-                  {animal.name} — {animal.kennel || animal.shelterluv_status || 'Unassigned'}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={form.animalId}
+              onChange={(value) => setField('animalId', value)}
+              options={animals}
+              getLabel={(animal) => animal.name}
+              getValue={(animal) => animal.id}
+              placeholder="Select cat..."
+            />
           </label>
 
           <label>

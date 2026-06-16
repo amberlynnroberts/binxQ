@@ -32,7 +32,7 @@ const checklists = {
 export function QuarantineChecklist({ setPage }) {
   const [shift, setShift] = useState('AM');
   const [checked, setChecked] = useState({});
-  const [initials, setInitials] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
+  const [initials, setInitials] = useState('');
   const [status, setStatus] = useState('');
   const [completedShifts, setCompletedShifts] = useState({ AM: null, PM: null });
 
@@ -80,8 +80,6 @@ export function QuarantineChecklist({ setPage }) {
       setStatus('Finish all checklist items first.');
       return;
     }
-
-    localStorage.setItem('kennelcheck_signed_by', initials.trim());
 
     await signOffQuarantinePaper({
       careDate: todayDateString(),

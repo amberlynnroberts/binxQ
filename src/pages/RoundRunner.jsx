@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X, Check } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X, Check, Plus, Trash2 } from 'lucide-react';
 import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, completeMedicationRoundItem, loadRoundSignoffs} from '../lib/roundsApi';
 import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
 import { signOffQuarantinePaper } from '../lib/reportsApi';
 import { formatAge } from '../lib/formatAge';
-import { medNeededForShift } from '../lib/medUtils';
+import { medNeededForShift, deleteMedication, createMedication } from '../lib/medUtils';
 import { signOffMedication } from '../lib/dailyCareApi';
 
 function ProgressBar({ current, total }) {
@@ -36,12 +36,20 @@ function AnimalHero({ animal }) {
 export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSummary, selectedRoundAnimal, selectedRoundMedication}) {
   const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
   const [index, setIndex] = useState(0);
-  const [signedBy, setSignedBy] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
+  const [signedBy, setSignedBy] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [skipped, setSkipped] = useState(0);
   const [kennelDraft, setKennelDraft] = useState('');
   const [medBusy, setMedBusy] = useState('');
+  const [showAddMed, setShowAddMed] = useState(false);
+  const [addMedForm, setAddMedForm] = useState({
+    medication_name: '',
+    dosage_notes: '',
+    schedule: shift,
+    start_date: todayDateString()
+  });
+  const [addMedBusy, setAddMedBusy] = useState(false);
 
   const animals = data?.animals || [];
   const meds = data?.meds || [];
@@ -98,7 +106,6 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   function saveName() {
     const name = signedBy.trim();
     if (!name) return false;
-    localStorage.setItem('kennelcheck_signed_by', name);
     return true;
   }
 
@@ -133,6 +140,42 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
       console.error('toggleMed error:', err);
     } finally {
       setMedBusy('');
+    }
+  }
+
+  async function deleteMed(med) {
+    if (!window.confirm(`Delete ${med.name}?`)) return;
+    try {
+      await deleteMedication(med.id);
+      await reload?.();
+      await load();
+    } catch (err) {
+      console.error('deleteMedication error:', err);
+      alert('Could not delete medication');
+    }
+  }
+
+  async function submitAddMed(e) {
+    e.preventDefault();
+    if (!addMedForm.medication_name.trim()) return;
+    
+    try {
+      setAddMedBusy(true);
+      await createMedication(item.animal.id, addMedForm);
+      setAddMedForm({
+        medication_name: '',
+        dosage_notes: '',
+        schedule: shift,
+        start_date: todayDateString()
+      });
+      setShowAddMed(false);
+      await reload?.();
+      await load();
+    } catch (err) {
+      console.error('createMedication error:', err);
+      alert('Could not add medication');
+    } finally {
+      setAddMedBusy(false);
     }
   }
 
@@ -195,7 +238,8 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   return (
     <main className="roundsScreen small">
       <div className="roundsTop">
-      <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
+        <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>
+        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
         <span/>
       </div>
 
@@ -239,37 +283,160 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
             <div><Utensils/><span>Fed</span></div>
           </section>
 
-          {animalMeds.length > 0 && (
-            <section className="roundInlineMeds">
-              <div className="roundInlineMedsHeader">
-                <Pill size={16}/>
-                <b>{shift} Medications</b>
-              </div>
+          <section className="roundInlineMeds">
+            <div className="roundInlineMedsHeader">
+              <Pill size={16}/>
+              <b>{shift} Medications</b>
+              <button
+                type="button"
+                onClick={() => setShowAddMed(!showAddMed)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#d8b4fe',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 4px',
+                  marginLeft: 'auto'
+                }}
+                title="Add medication"
+              >
+                <Plus size={18}/>
+              </button>
+            </div>
 
-              {animalMeds.map(med => {
-                const key = `${item.animal.id}:${med.id}`;
-                const done = completedMedKeys.has(key);
-                console.log('med row:', med.name, 'key:', key, 'done:', done, 'completedMedKeys:', [...completedMedKeys]);
-                return (
-                  <div key={med.id} className={`roundInlineMedRow ${done ? 'done' : ''}`}>
-                    <div className="roundInlineMedInfo">
-                      <b>{med.name}</b>
-                      <small>{med.dose || 'No dosage'} · {med.schedule}</small>
+            {animalMeds.length === 0 ? (
+              <div style={{
+                padding: '16px',
+                textAlign: 'center',
+                color: '#98a5b8',
+                fontSize: '14px'
+              }}>
+                No medications
+              </div>
+            ) : (
+              <>
+                {animalMeds.map(med => {
+                  const key = `${item.animal.id}:${med.id}`;
+                  const done = completedMedKeys.has(key);
+                  console.log('med row:', med.name, 'key:', key, 'done:', done, 'completedMedKeys:', [...completedMedKeys]);
+                  return (
+                    <div key={med.id} className={`roundInlineMedRow ${done ? 'done' : ''}`}>
+                      <div className="roundInlineMedInfo">
+                        <b>{med.name}</b>
+                        <small>{med.dose || 'No dosage'} · {med.schedule}</small>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className={done ? 'roundMedGivenBtn done' : 'roundMedGivenBtn'}
+                          onClick={() => {
+                            if (done || medBusy === med.id) return;
+                            toggleMed(med);
+                          }}>
+                          {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteMed(med)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ff8a8a',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 4px',
+                            flexShrink: 0
+                          }}
+                          title="Delete medication"
+                        >
+                          <Trash2 size={16}/>
+                        </button>
+                      </div>
                     </div>
+                  );
+                })}
+              </>
+            )}
+
+              {showAddMed && (
+                <form onSubmit={submitAddMed} style={{
+                  borderTop: '1px solid rgba(148, 163, 184, 0.12)',
+                  paddingTop: '10px',
+                  marginTop: '10px',
+                  display: 'grid',
+                  gap: '10px'
+                }}>
+                  <input
+                    type="text"
+                    value={addMedForm.medication_name}
+                    onChange={e => setAddMedForm({...addMedForm, medication_name: e.target.value})}
+                    placeholder="Medication name"
+                    required
+                    style={{
+                      width: '100%',
+                      minHeight: '42px',
+                      border: '1px solid rgba(148, 163, 184, 0.18)',
+                      borderRadius: '12px',
+                      background: 'rgba(15, 23, 42, 0.96)',
+                      color: '#f8fafc',
+                      padding: '0 12px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={addMedForm.dosage_notes}
+                    onChange={e => setAddMedForm({...addMedForm, dosage_notes: e.target.value})}
+                    placeholder="Dosage (optional)"
+                    style={{
+                      width: '100%',
+                      minHeight: '42px',
+                      border: '1px solid rgba(148, 163, 184, 0.18)',
+                      borderRadius: '12px',
+                      background: 'rgba(15, 23, 42, 0.96)',
+                      color: '#f8fafc',
+                      padding: '0 12px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px'}}>
+                    <button
+                      type="submit"
+                      disabled={addMedBusy}
+                      style={{
+                        minHeight: '42px',
+                        border: 'none',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #39d353, #2ea043)',
+                        color: 'white',
+                        fontWeight: '900',
+                        cursor: addMedBusy ? 'wait' : 'pointer'
+                      }}
+                    >
+                      Add Med
+                    </button>
                     <button
                       type="button"
-                      className={done ? 'roundMedGivenBtn done' : 'roundMedGivenBtn'}
-                      onClick={() => {
-                        if (done || medBusy === med.id) return;
-                        toggleMed(med);
-                      }}>
-                      {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
+                      onClick={() => setShowAddMed(false)}
+                      style={{
+                        minHeight: '42px',
+                        border: '1px solid rgba(148, 163, 184, 0.18)',
+                        borderRadius: '12px',
+                        background: 'transparent',
+                        color: '#98a5b8',
+                        fontWeight: '900',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
                     </button>
                   </div>
-                );
-              })}
+                </form>
+              )}
             </section>
-          )}
         </>
       ) : (
         <section className="roundMedicationCard">

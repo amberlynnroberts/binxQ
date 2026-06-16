@@ -2081,36 +2081,149 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   color: #86efac !important;
   opacity: 1 !important;
 }
+/* SearchableSelect Styles - Matches BinxQ Theme */
 
-.checklistBadges {
+.searchableSelectContainer {
+  position: relative;
+  width: 100%;
+}
+
+.searchableSelectButton {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  font-size: 15px;
+  cursor: pointer;
   display: flex;
-  flex-direction: row;
-  gap: 6px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-}
-
-.checklistBadge {
-  display: inline-flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 950;
-  padding: 4px 10px;
-  border-radius: 999px;
-  width: fit-content;
+  gap: 10px;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 
-.checklistBadge.done {
-  background: rgba(34, 197, 94, 0.2);
-  color: #86efac;
-  border: 1px solid rgba(34, 197, 94, 0.35);
+.searchableSelectButton:hover {
+  border-color: rgba(168, 85, 247, 0.35);
+  background: rgba(15, 23, 42, 0.98);
 }
 
-.checklistBadge.pending {
-  background: rgba(148, 163, 184, 0.12);
-  color: var(--round-muted);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+.searchableSelectButton:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.12);
+}
+
+.searchableSelectButton svg {
+  transition: transform 0.2s;
+  color: #98a5b8;
+  flex-shrink: 0;
+}
+
+.searchableSelectDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: rgba(13, 23, 36, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.searchableSelectSearch {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: transparent;
+}
+
+.searchableSelectSearch input {
+  flex: 1;
+  border: none;
+  padding: 8px 0;
+  font-size: 15px;
+  background: transparent;
+  color: #f8fafc;
+  outline: none;
+}
+
+.searchableSelectSearch input::placeholder {
+  color: #98a5b8;
+}
+
+.searchableSelectSearch svg {
+  color: #98a5b8;
+  flex-shrink: 0;
+}
+
+.searchableSelectOptions {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.searchableSelectOptions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.searchableSelectOptions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.searchableSelectOptions::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 3px;
+}
+
+.searchableSelectOptions::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.searchableSelectOption {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.12s;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.searchableSelectOption:hover {
+  background: rgba(168, 85, 247, 0.14);
+  color: #f8fafc;
+}
+
+.searchableSelectOption.selected {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.26), rgba(59, 130, 246, 0.16));
+  color: #d8b4fe;
+  border-left: 3px solid #a855f7;
+  padding-left: 11px;
+}
+
+.searchableSelectEmpty {
+  padding: 24px 14px;
+  text-align: center;
+  color: #98a5b8;
+  font-size: 14px;
 }
 
 .passcodeCard input {

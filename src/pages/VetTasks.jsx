@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CalendarDays, CheckCircle2, Plus, Syringe, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, Plus, Search, Syringe, Trash2 } from 'lucide-react';
 import { isInCustodyAnimal } from '../lib/animalFilters';
 import { addVetTask, completeVetTask, deleteVetTask, fetchVetTasks, todayDateString } from '../lib/vetTasksApi';
 
@@ -20,8 +20,8 @@ function getAnimalKennel(animals, animalId) {
 }
 
 export function VetTasks({ data, setPage }) {
-  // Filter to only in-custody animals (exclude Deceased and Healthy in home)
-  const animals = useMemo(() => {
+  // Filter to only available animals (exclude Adopted, Happy in Home, Deceased)
+  const allAnimals = useMemo(() => {
     return (data?.animals || []).filter(isInCustodyAnimal);
   }, [data]);
 
@@ -30,6 +30,7 @@ export function VetTasks({ data, setPage }) {
   const [message, setMessage] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [completedBy, setCompletedBy] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function load() {
     const rows = await fetchVetTasks({ includeCompleted: false });
@@ -39,6 +40,17 @@ export function VetTasks({ data, setPage }) {
   useEffect(() => {
     load().catch(console.error);
   }, []);
+
+  // Filter animals based on search query
+  const filteredAnimals = useMemo(() => {
+    if (!searchQuery.trim()) return allAnimals;
+    
+    const q = searchQuery.toLowerCase();
+    return allAnimals.filter(animal =>
+      animal.name.toLowerCase().includes(q) ||
+      (animal.kennel && animal.kennel.toLowerCase().includes(q))
+    );
+  }, [allAnimals, searchQuery]);
 
   const upcoming = useMemo(() => {
     const today = todayDateString();
@@ -77,6 +89,7 @@ export function VetTasks({ data, setPage }) {
 
       setForm(blankTask);
       setShowAdd(false);
+      setSearchQuery('');
       setMessage('Vet task added.');
       await load();
     } catch (err) {
@@ -111,7 +124,7 @@ export function VetTasks({ data, setPage }) {
         <div className="vetTaskMain">
           <b>{task.task_name}</b>
           <small>{task.task_type} · Due {task.due_date}</small>
-          <small>{getAnimalName(animals, task.animal_id)} · {getAnimalKennel(animals, task.animal_id)}</small>
+          <small>{getAnimalName(allAnimals, task.animal_id)} · {getAnimalKennel(allAnimals, task.animal_id)}</small>
           {task.notes && <p>{task.notes}</p>}
         </div>
 
@@ -161,11 +174,23 @@ export function VetTasks({ data, setPage }) {
 
       {showAdd && (
         <form className="vetTaskForm" onSubmit={submitTask}>
+          <label className="vetSearchBox">
+            <Search size={16}/>
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search cat name or kennel..."
+              autoFocus
+            />
+          </label>
+
           <label>Cat
             <select value={form.animalId} onChange={e => setField('animalId', e.target.value)}>
               <option value="">Select cat...</option>
-              {animals.map(animal => (
-                <option key={animal.id} value={animal.id}>{animal.name} — {animal.kennel || 'Unassigned'}</option>
+              {filteredAnimals.map(animal => (
+                <option key={animal.id} value={animal.id}>
+                  {animal.name} — {animal.kennel || animal.shelterluv_status || 'Unassigned'}
+                </option>
               ))}
             </select>
           </label>

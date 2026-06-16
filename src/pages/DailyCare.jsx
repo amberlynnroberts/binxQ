@@ -13,7 +13,7 @@ export function DailyCare({ data, reload }) {
   console.log('animals received:', data?.animals);
   const [shift, setShift] = useState('AM');
   const [careDate, setCareDate] = useState(todayDateString());
-  const [signedBy, setSignedBy] = useState(() => localStorage.getItem('kennelcheck_signed_by') || '');
+  const [signedBy, setSignedBy] = useState('');
   const [notesByKey, setNotesByKey] = useState({});
   const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
   const [message, setMessage] = useState('');
@@ -72,7 +72,6 @@ const medsByAnimal = useMemo(() => {
       showMessage('Enter your name or initials first.');
       return false;
     }
-    localStorage.setItem('kennelcheck_signed_by', signedBy.trim());
     return true;
   }
 
