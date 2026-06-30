@@ -3,26 +3,27 @@ import { Database } from 'lucide-react';
 import { ShelterluvLiveSyncPanel } from '../components/ShelterluvLiveSyncPanel';
 
 export function More({ reload, dbStatus, setDbStatus, setPage }) {
-async function syncEverything() {
-  try {
-    setDbStatus('Syncing everything...');
+  async function syncEverything() {
+    try {
+      setDbStatus('Syncing everything...');
 
-    await syncShelterluvAnimals();
-    await syncFromShelterluvApi();
-    await reload();
-    setShowSyncSuccess(true);
+      await syncShelterluvAnimals();
+      await syncFromShelterluvApi();
+      await reload();
+      setShowSyncSuccess(true);
 
-    setTimeout(() => {
-      setShowSyncSuccess(false);
-    }, 3000);
+      setTimeout(() => {
+        setShowSyncSuccess(false);
+      }, 3000);
 
-    setDbStatus('Everything synced.');
-  } catch (err) {
-    console.error(err);
-    setDbStatus('Sync failed: ' + err.message);
+      setDbStatus('Everything synced.');
+    } catch (err) {
+      console.error(err);
+      setDbStatus('Sync failed: ' + err.message);
+    }
   }
-}
-const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
   return (
     <main>
@@ -50,6 +51,12 @@ const [showSyncSuccess, setShowSyncSuccess] = useState(false);
         className="actionCardButton"
         onClick={() => setPage('reports')}>
         Reports
+      </button>
+
+      <button
+        className="actionCardButton"
+        onClick={() => setPage('quarantine-card-generator')}>
+        📋 Quarantine Cards
       </button>
 
       {showSyncSuccess && (

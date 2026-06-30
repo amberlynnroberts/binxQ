@@ -22,6 +22,7 @@ import { VetTasks } from './pages/VetTasks';
 import { VetCalendar } from './pages/VetCalendar';
 import PasscodeGate from './components/PasscodeGate';
 import FeedbackModal from './components/FeedbackModal';
+import QuarantineCardGenerator from './pages/QuarantineCardGenerator';
 
 export default function App() {
   const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -46,12 +47,12 @@ export default function App() {
   }, [data.animals, selected]);
 
   useEffect(() => {
-  const interval = setInterval(() => {
-    reload();
-  }, 60_000); // every 60 seconds
+    const interval = setInterval(() => {
+      reload();
+    }, 60_000); // every 60 seconds
 
-  return () => clearInterval(interval);
-}, [reload]);
+    return () => clearInterval(interval);
+  }, [reload]);
 
   const animal = data.animals.find(a => a.id === selected) || data.animals[0];
 
@@ -170,6 +171,13 @@ export default function App() {
         {page === 'daily-care' && (
           <DailyCare
             data={visibleData || data}
+            reload={reload}
+          />
+        )}
+
+        {page === 'quarantine-card-generator' && (
+          <QuarantineCardGenerator
+            data={data}
             reload={reload}
           />
         )}
