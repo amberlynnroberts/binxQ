@@ -56,7 +56,7 @@ export function filterAnimalsByView(animals, animalView) {
   }
 
   if (animalView === 'rescue') {
-    return animals.filter(isInRescueAnimal);
+    return animals.filter(a => isInRescueAnimal(a) && !isArchivedAnimal(a));
   }
 
   if (animalView === 'archived') {
@@ -69,7 +69,7 @@ export function filterAnimalsByView(animals, animalView) {
 export function getAnimalFilterCounts(animals) {
   return {
     quarantine: animals.filter(a => isQuarantineAnimal(a) && !isArchivedAnimal(a)).length,
-    rescue: animals.filter(isInRescueAnimal).length,
+    rescue: animals.filter(a => isInRescueAnimal(a) && !isArchivedAnimal(a)).length,
     archived: animals.filter(isArchivedAnimal).length,
     all: animals.length
   };

@@ -8,6 +8,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Safety cap on total pages per run, so a runaway loop (e.g. an API that
+// never returns < limit) can't make this function run forever.
+const MAX_PAGES_PER_RUN = 50;
+
 function firstValue(...values: any[]) {
   return values.find(v => v !== undefined && v !== null && v !== "");
 }
@@ -70,7 +74,7 @@ function normalizeShelterluvAnimal(raw: any) {
       raw.kennel,
       raw.Kennel,
       null
-    ),    
+    ),
     photo_url: normalizePhoto(raw),
     primary_breed: primaryBreed || null,
     secondary_breed: firstValue(raw.secondary_breed, raw.SecondaryBreed, raw.secondaryBreed, null),
@@ -96,52 +100,107 @@ function normalizeShelterluvAnimal(raw: any) {
   };
 }
 
-function buildShelterluvUrl(endpoint: string, mode: string, body: any) {
+// NOTE on `mode`:
+// - "in_custody": only returns animals currently in custody. An animal that
+//   is adopted/placed/removed *disappears* from these results entirely, so
+//   this mode alone can never detect or record that transition.
+// - "archived": only returns animals NOT in custody (adopted, in home, etc).
+// - "quarantine": in-custody animals, further filtered client-side to the
+//   quarantine status string.
+// - "all" (or anything else / omitted): no status_type filter at all — asks
+//   Shelterluv for every animal regardless of custody state. This is the
+//   only mode that reliably catches an animal moving from in-custody to
+//   not-in-custody (e.g. Snickers going from "Cat Lounge" to "Healthy in
+//   Home"), so the scheduled/cron sync should use this mode, not
+//   "in_custody", if you want statuses to stay accurate for animals that
+//   just left custody.
+function buildShelterluvUrl(endpoint: string, mode: string, body: any, offset: number) {
   const url = new URL(endpoint);
   url.searchParams.set("sort", body.sort || "updated_at");
   url.searchParams.set("since", String(body.since || "1672531199"));
   url.searchParams.set("limit", String(body.limit || "100"));
-  url.searchParams.set("offset", String(body.offset || "0"));
+  url.searchParams.set("offset", String(offset));
 
   if (mode === "in_custody" || mode === "quarantine") {
     url.searchParams.set("status_type", "in custody");
   } else if (mode === "archived") {
     url.searchParams.set("status_type", body.status_type || "not in custody");
   }
+  // mode === "all" (or unrecognized): intentionally no status_type filter.
 
   if (body.status) url.searchParams.set("status", body.status);
-  if (body.status_type) url.searchParams.set("status_type", body.status_type);
+  if (body.status_type && mode !== "in_custody" && mode !== "quarantine" && mode !== "archived") {
+    url.searchParams.set("status_type", body.status_type);
+  }
 
   return url.toString();
 }
 
-async function fetchShelterluvAnimals(mode: string, body: any) {
+// Fetches ALL pages for the given mode, following offset/limit until a page
+// comes back with fewer records than the requested limit (i.e. the last
+// page), or MAX_PAGES_PER_RUN is hit as a safety stop.
+async function fetchAllShelterluvAnimals(mode: string, body: any) {
   const apiKey = Deno.env.get("SHELTERLUV_API_KEY");
   const endpoint = Deno.env.get("SHELTERLUV_ANIMALS_ENDPOINT");
   if (!apiKey) throw new Error("Missing SHELTERLUV_API_KEY secret");
   if (!endpoint) throw new Error("Missing SHELTERLUV_ANIMALS_ENDPOINT secret");
 
-  const url = buildShelterluvUrl(endpoint, mode, body);
+  const limit = Number(body.limit || 100);
+  let offset = Number(body.offset || 0);
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "X-API-Key": apiKey,
-      "Api-Key": apiKey,
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-  });
+  const allAnimals: any[] = [];
+  let firstUrl = "";
+  let firstPagePreview: any[] = [];
+  let pageCount = 0;
 
-  const text = await response.text();
-  if (!response.ok) throw new Error(`Shelterluv API failed: ${response.status} ${text.slice(0, 500)} URL=${url}`);
+  while (pageCount < MAX_PAGES_PER_RUN) {
+    const url = buildShelterluvUrl(endpoint, mode, body, offset);
+    if (pageCount === 0) firstUrl = url;
 
-  try {
-    return { payload: JSON.parse(text), url };
-  } catch {
-    throw new Error(`Shelterluv response was not JSON: ${text.slice(0, 500)} URL=${url}`);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "X-API-Key": apiKey,
+        "Api-Key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+      throw new Error(`Shelterluv API failed: ${response.status} ${text.slice(0, 500)} URL=${url}`);
+    }
+
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      throw new Error(`Shelterluv response was not JSON: ${text.slice(0, 500)} URL=${url}`);
+    }
+
+    const pageAnimals = extractAnimalArray(payload);
+    if (pageCount === 0) firstPagePreview = pageAnimals.slice(0, 2);
+
+    allAnimals.push(...pageAnimals);
+    pageCount += 1;
+
+    // Stop once a page returns fewer records than the limit — that's the
+    // last page. Also stop on an empty page just in case.
+    if (pageAnimals.length < limit || pageAnimals.length === 0) {
+      break;
+    }
+
+    offset += limit;
   }
+
+  return {
+    animals: allAnimals,
+    firstUrl,
+    preview: { mode, usedUrl: firstUrl, sample: firstPagePreview },
+    pageCount,
+  };
 }
 
 serve(async (req) => {
@@ -156,7 +215,13 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const mode = body.mode || "in_custody";
+    // Default changed from "in_custody" to "all": a regular scheduled sync
+    // needs to see animals that just left custody (adopted, in home, etc.)
+    // in order to update their status. "in_custody" only ever sees animals
+    // that are still in custody, so it can't record that transition.
+    // Pass mode: "in_custody" / "quarantine" / "archived" explicitly if you
+    // specifically want a narrower, filtered sync for some other purpose.
+    const mode = body.mode || "all";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -167,7 +232,7 @@ serve(async (req) => {
 
     const { data: run, error: runError } = await supabase
       .from("shelterluv_sync_runs")
-      .insert({ status: "running" })
+      .insert({ status: "running", mode })
       .select()
       .single();
     if (runError) throw runError;
@@ -176,13 +241,15 @@ serve(async (req) => {
     let animalsUpserted = 0;
     let preview: any = null;
     let usedUrl = "";
+    let pageCount = 0;
 
     try {
-      const fetched = await fetchShelterluvAnimals(mode, body);
-      usedUrl = fetched.url;
-      const rawAnimals = extractAnimalArray(fetched.payload);
+      const fetched = await fetchAllShelterluvAnimals(mode, body);
+      usedUrl = fetched.firstUrl;
+      preview = fetched.preview;
+      pageCount = fetched.pageCount;
+      const rawAnimals = fetched.animals;
       animalsSeen = rawAnimals.length;
-      preview = { mode, usedUrl, sample: rawAnimals.slice(0, 2) };
 
       let recordsToSync = rawAnimals;
       if (mode === "quarantine") {
@@ -212,9 +279,18 @@ serve(async (req) => {
         animals_seen: animalsSeen,
         animals_upserted: animalsUpserted,
         raw_response_preview: preview,
+        pages_fetched: pageCount,
       }).eq("id", run.id);
 
-      return new Response(JSON.stringify({ ok: true, mode, used_url: usedUrl, animals_seen: animalsSeen, animals_upserted: animalsUpserted, preview }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        mode,
+        used_url: usedUrl,
+        pages_fetched: pageCount,
+        animals_seen: animalsSeen,
+        animals_upserted: animalsUpserted,
+        preview,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (err) {
@@ -225,6 +301,7 @@ serve(async (req) => {
         animals_upserted: animalsUpserted,
         error_message: err.message,
         raw_response_preview: preview || { mode, usedUrl },
+        pages_fetched: pageCount,
       }).eq("id", run.id);
       throw err;
     }

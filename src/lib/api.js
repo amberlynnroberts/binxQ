@@ -2,10 +2,63 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 export const symptomOptions = ['Eye discharge','Diarrhea','Sneezing','Vomiting','Not eating','Lethargic','Cleaning overdue','Other'];
 
+// Same archived-status list used in animalFilters.js — kept here too so this
+// file doesn't exclude/include animals inconsistently with the rest of the
+// app. If you already import this list from a shared file, replace this
+// local copy with that import instead of keeping two lists in sync by hand.
+const archivedShelterluvStatuses = [
+  'transferred out',
+  'adopted',
+  'healthy in home',
+  'deceased',
+  'died in care',
+  'euthanized',
+  'returned to owner',
+  'released to colony',
+  'released to wild',
+  'released to colony / wild',
+];
+
+function isArchivedStatus(shelterluvStatus) {
+  return archivedShelterluvStatuses.includes(String(shelterluvStatus || '').trim().toLowerCase());
+}
+
 function sortKennels(a, b) {
   const an = Number(String(a.kennel || '').replace(/\D/g, '')) || 999;
   const bn = Number(String(b.kennel || '').replace(/\D/g, '')) || 999;
   return an - bn;
+}
+
+// PAGINATION FIX:
+// Supabase's PostgREST API caps how many rows a single request returns
+// (the project's "Max Rows" setting, default 1000). A plain
+// `.select('*')` silently truncates once a table exceeds that cap — it
+// does NOT error, it just quietly hands back a partial result. Since our
+// animals table sorts by kennel_number ascending and Postgres sorts NULLs
+// last by default, cats with no kennel assigned (e.g. lounge cats) are
+// exactly the rows that land at the end of the result set and get cut off.
+//
+// This helper walks a query in pages using .range() until a page comes
+// back with fewer rows than the page size, guaranteeing we get every row
+// no matter how large the table grows or what the project's Max Rows
+// setting is.
+async function fetchAllRows(queryBuilderFn, pageSize = 1000) {
+  let allRows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryBuilderFn().range(from, to);
+    if (error) throw error;
+
+    const rows = data || [];
+    allRows = allRows.concat(rows);
+
+    if (rows.length < pageSize) break; // last page
+    from += pageSize;
+  }
+
+  return allRows;
 }
 
 export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
@@ -13,19 +66,13 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
     return { animals: [], meds: [], notes: [], checks: [], dbStatus: 'Supabase not configured' };
   }
 
-  const [{ data: appAnimals, error: animalsError }, { data: shelterluvAnimals, error: shelterluvError }, { data: symptomsRows, error: symptomsError }, { data: medsRows, error: medsError }, { data: notesRows, error: notesError }] = await Promise.all([
-    supabase.from('animals').select('*').order('kennel_number', { ascending: true }),
-    supabase.from('shelterluv_animals').select('*'),
-    supabase.from('symptoms').select('*').eq('active', true),
-    supabase.from('medications').select('*').eq('active', true),
-    supabase.from('notes').select('*').order('created_at', { ascending: false })
+  const [appAnimals, shelterluvAnimals, symptomsRows, medsRows, notesRows] = await Promise.all([
+    fetchAllRows(() => supabase.from('animals').select('*').order('kennel_number', { ascending: true })),
+    fetchAllRows(() => supabase.from('shelterluv_animals').select('*')),
+    fetchAllRows(() => supabase.from('symptoms').select('*').eq('active', true)),
+    fetchAllRows(() => supabase.from('medications').select('*').eq('active', true)),
+    fetchAllRows(() => supabase.from('notes').select('*').order('created_at', { ascending: false })),
   ]);
-
-  if (animalsError) throw animalsError;
-  if (shelterluvError) throw shelterluvError;
-  if (symptomsError) throw symptomsError;
-  if (medsError) throw medsError;
-  if (notesError) throw notesError;
 
   const shelterluvById = new Map((shelterluvAnimals || []).map(a => [a.shelterluv_id, a]));
   const symptomsByAnimal = new Map();
@@ -54,7 +101,15 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
   }
 
   const animals = (appAnimals || [])
-    .filter(row => includeRemoved || row.local_status !== 'Removed')
+    // Exclude based on the animal's CURRENT Shelterluv status (adopted,
+    // deceased, healthy in home, etc.) rather than the local `local_status`
+    // flag, which can go stale if an animal returns to custody after being
+    // marked removed (e.g. foster -> lounge) and nothing clears it.
+    .filter(row => {
+      if (includeRemoved) return true;
+      const shelterluvStatus = shelterluvById.get(row.shelterluv_id)?.status || '';
+      return !isArchivedStatus(shelterluvStatus);
+    })
     .map(row => {
       const s = shelterluvById.get(row.shelterluv_id);
 

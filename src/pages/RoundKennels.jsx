@@ -91,10 +91,16 @@ export function RoundKennels({
     let list = animals;
 
     if (roundType === 'med') {
-      list = list.filter(animal => {
-        const activeMeds = medByAnimal.get(animal.id) || [];
-        return activeMeds.some(med => !completedMedKeys.has(`${animal.id}:${med.id}`));
-      });
+      // FIXED: previously only kept a quarantine cat if it had at least one
+      // med still not given — meaning a cat vanished from its kennel group
+      // the moment all its meds were done for the shift. Cat Lounge cats
+      // never had this filter (they only check activeMeds.length > 0), so
+      // lounge cats stayed visible with a "Done" badge after completion
+      // while quarantine cats silently disappeared. Now quarantine cats
+      // behave the same way lounge cats already did: any cat with meds due
+      // this shift stays visible, done or not, with status shown via the
+      // Done/Med due badge below.
+      list = list.filter(animal => (medByAnimal.get(animal.id) || []).length > 0);
     }
 
     if (query.trim()) {

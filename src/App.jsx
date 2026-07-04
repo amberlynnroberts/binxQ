@@ -114,7 +114,8 @@ export default function App() {
         setPage={setPage} 
         animalView={animalView} 
         setAnimalView={setAnimalView}
-        onMedRound={() => startRound('med', 'AM')}>
+        onMedRound={() => startRound('med', 'AM')}
+        activeRoundType={activeRound.type}>
         <button
           className="floatingFeedback"
           onClick={() => setShowFeedback(true)}>
