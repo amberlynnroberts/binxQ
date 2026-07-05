@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimalForm, defaultAnimalForm } from './components/AnimalForm';
-import { createQuarantineAnimal, updateQuarantineAnimal } from './lib/api';
+import { createQuarantineAnimal, updateQuarantineAnimal, findAnimalsByName } from './lib/api';
 import { useKennelData } from './hooks/useKennelData';
 import { Reports } from './pages/Reports';
 import { Kennels } from './pages/Kennels';
@@ -83,6 +83,28 @@ export default function App() {
   }
 
   async function addAnimal(form) {
+    // Check for existing animals with the same name before creating a new
+    // one — catches the case where staff use "+ Add" for a cat that
+    // already has a synced Shelterluv record, which previously created a
+    // disconnected duplicate (e.g. the "Gorilla" duplicates).
+    if (form.name?.trim()) {
+      try {
+        const matches = await findAnimalsByName(form.name);
+        if (matches.length > 0) {
+          const details = matches
+            .map(m => `• ${m.name} (status: ${m.status || 'unknown'}, intake: ${m.intake_date || 'unknown'})`)
+            .join('\n');
+          const proceed = window.confirm(
+            `A cat named "${form.name}" already exists:\n\n${details}\n\nAdd another cat with this name anyway?`
+          );
+          if (!proceed) return;
+        }
+      } catch (err) {
+        console.error('Duplicate name check failed:', err);
+        // Don't block adding the animal just because the check itself failed.
+      }
+    }
+
     await createQuarantineAnimal(form);
     await reload();
     setPage('kennels');

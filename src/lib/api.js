@@ -178,6 +178,18 @@ export async function syncFromMockShelterluv() {
   return data;
 }
 
+export async function findAnimalsByName(name) {
+  if (!isSupabaseConfigured || !name?.trim()) return [];
+
+  const { data, error } = await supabase
+    .from('shelterluv_animals')
+    .select('shelterluv_id, name, status, intake_date')
+    .ilike('name', name.trim());
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function createQuarantineAnimal(form) {
   const shelterluvId = form.shelterluv_id || `KC-${Date.now()}`;
 
