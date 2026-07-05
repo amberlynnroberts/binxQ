@@ -200,7 +200,7 @@ export function RoundKennels({
       <section className={roundType === 'med' ? 'roundBoardHero blue' : 'roundBoardHero'}>
         <div>
           <p>{roundType === 'med' ? 'Select a cat for meds' : 'Select a cat to sign off'}</p>
-          <h2>All quarantine cats</h2>
+          <h2>{roundType === 'med' ? 'All quarantine cats' : 'Grouped by kennel'}</h2>
           <small>Tap a cat card to open the sign-off screen.</small>
         </div>
         {roundType === 'med' ? <Pill size={34}/> : <ClipboardCheck size={34}/>}
@@ -215,7 +215,7 @@ export function RoundKennels({
         />
       </label>
 
-      {sortedVisibleAnimals.length === 0 && loungeAnimals.length === 0 ? (
+      {(roundType === 'med' ? sortedVisibleAnimals.length === 0 : kennelGroups.every(({ cats }) => cats.length === 0)) && loungeAnimals.length === 0 ? (
         <section className="roundBoardEmpty">
           <CheckCircle2 size={34}/>
           <h2>Nothing due</h2>
@@ -265,49 +265,95 @@ export function RoundKennels({
             </section>
           )}
 
-          {/* All quarantine cats, one flat list sorted by kennel number,
-              each with a status dot on the kennel badge corner instead of
-              being split into separate per-kennel sections. */}
-          {sortedVisibleAnimals.length > 0 && (
-            <section className="roundKennelSection" key="quarantine-flat">
-              <div className="roundKennelHeader">
-                <span className="kennel">Q</span>
-                <div>
-                  <h2>Quarantine</h2>
-                  <small>{overallProgress.completed} of {overallProgress.total} complete</small>
+          {/* Medication Round: flat list of all quarantine cats with meds,
+              sorted by kennel number, status shown via the kennel badge dot.
+              Care Round: grouped back into per-kennel sections, as before. */}
+          {roundType === 'med' ? (
+            sortedVisibleAnimals.length > 0 && (
+              <section className="roundKennelSection" key="quarantine-flat">
+                <div className="roundKennelHeader">
+                  <span className="kennel">Q</span>
+                  <div>
+                    <h2>Quarantine</h2>
+                    <small>{overallProgress.completed} of {overallProgress.total} complete</small>
+                  </div>
+                  <ProgressPill progress={overallProgress}/>
                 </div>
-                <ProgressPill progress={overallProgress}/>
-              </div>
 
-              <div className="roundKennelCards">
-                {sortedVisibleAnimals.map(cat => {
-                  const done = isCatDone(cat);
-                  const activeMeds = medByAnimal.get(cat.id) || [];
-                  return (
-                    <button
-                      type="button"
-                      key={cat.id}
-                      className={`roundCatCard ${done ? 'done' : ''}`}
-                      onClick={() => openCat(cat)}
-                    >
-                      <KennelBadgeWithStatus kennel={cat.kennel} done={done} />
-                      <AnimalThumb animal={cat}/>
-                      <span className="roundCatInfo">
-                        <b>{cat.name}</b>
-                        <small>{cat.sex || 'Unknown'} · {formatAge(cat.age)}</small>
-                        {roundType === 'med' && (
+                <div className="roundKennelCards">
+                  {sortedVisibleAnimals.map(cat => {
+                    const done = isCatDone(cat);
+                    const activeMeds = medByAnimal.get(cat.id) || [];
+                    return (
+                      <button
+                        type="button"
+                        key={cat.id}
+                        className={`roundCatCard ${done ? 'done' : ''}`}
+                        onClick={() => openCat(cat)}
+                      >
+                        <KennelBadgeWithStatus kennel={cat.kennel} done={done} />
+                        <AnimalThumb animal={cat}/>
+                        <span className="roundCatInfo">
+                          <b>{cat.name}</b>
+                          <small>{cat.sex || 'Unknown'} · {formatAge(cat.age)}</small>
                           <small>
                             {activeMeds.length} active med{activeMeds.length === 1 ? '' : 's'}
                           </small>
-                        )}
-                        <CatStatusBadge done={done} roundType={roundType}/>
-                      </span>
-                      <ChevronRight size={18}/>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+                          <CatStatusBadge done={done} roundType={roundType}/>
+                        </span>
+                        <ChevronRight size={18}/>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )
+          ) : (
+            kennelGroups.filter(({ cats }) => cats.length > 0).map(({ kennel, cats }) => {
+              const progress = getProgressForCats(cats);
+              return (
+                <section className="roundKennelSection" key={kennel}>
+                  <div className="roundKennelHeader">
+                    <span className={`kennel ${getKennelColorClass(kennel)}`}>
+                      {kennelShort(kennel)}
+                    </span>
+                    <div>
+                      <h2>{kennel}</h2>
+                      <small>{progress.completed} of {progress.total} complete</small>
+                    </div>
+                    <ProgressPill progress={progress}/>
+                  </div>
+
+                  <div className="roundKennelCards">
+                    {cats.length === 0 && (
+                      <div className="emptyKennelCard">
+                        <b>Empty</b>
+                        <small>No cats assigned</small>
+                      </div>
+                    )}
+                    {cats.map(cat => {
+                      const done = isCatDone(cat);
+                      return (
+                        <button
+                          type="button"
+                          key={cat.id}
+                          className={`roundCatCard ${done ? 'done' : ''}`}
+                          onClick={() => openCat(cat)}
+                        >
+                          <AnimalThumb animal={cat}/>
+                          <span className="roundCatInfo">
+                            <b>{cat.name}</b>
+                            <small>{cat.sex || 'Unknown'} · {formatAge(cat.age)}</small>
+                            <CatStatusBadge done={done} roundType={roundType}/>
+                          </span>
+                          <ChevronRight size={18}/>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })
           )}
         </div>
       )}
