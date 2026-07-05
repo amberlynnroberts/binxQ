@@ -36,12 +36,12 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
         <b>{title}</b>
         <small>{subtitle}</small>
         {badges ? (
-          <div style={{ display: 'flex', flexDirection: 'row', gap: 6, marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
             {badges.map(b => (
-              <span key={b.label} className={`checklistBadge ${b.done ? 'done' : 'pending'}`}>
+              <small key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {b.done ? <CheckCircle2 size={12} /> : null}
                 {b.label}
-              </span>
+              </small>
             ))}
           </div>
         ) : (
@@ -188,8 +188,8 @@ export function RoundsDashboard({ data, setPage, startRound }) {
   const vetSummary = summarizeVetEvents(upcomingVetEvents);
 
   const checklistBadges = [
-    { label: 'AM', done: Boolean(checklistSignoffs.AM) },
-    { label: 'PM', done: Boolean(checklistSignoffs.PM) }
+    { label: `AM ${checklistSignoffs.AM ? 'Complete' : 'Not Complete'}`, done: Boolean(checklistSignoffs.AM) },
+    { label: `PM ${checklistSignoffs.PM ? 'Complete' : 'Not Complete'}`, done: Boolean(checklistSignoffs.PM) }
   ];
 
   const checklistComplete = Boolean(checklistSignoffs.AM && checklistSignoffs.PM);
