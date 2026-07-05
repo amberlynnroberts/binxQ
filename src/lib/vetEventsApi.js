@@ -110,8 +110,7 @@ export async function addVetEvent({
       event_type: eventType,
       event_name: eventName.trim(),
       due_date: dueDate || null,
-      appointment_at: appointmentAt || null,
-      location: location || null,
+      appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,      location: location || null,
       veterinarian: veterinarian || null,
       notes: notes || null
     })

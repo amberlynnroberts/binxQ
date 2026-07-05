@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
+import { fetchDailyCareSignoffs } from '../lib/dailyCareApi';
 import { currentHour, getMissingCleaningTasks, todayDateString } from '../lib/careTaskRules';
 import {
   Bell,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 import { fetchUpcomingVetEvents, summarizeVetEvents } from '../lib/vetEventsApi';
 import { fetchDailyReport } from '../lib/reportsApi';
+import { medNeededForShift } from '../lib/medUtils';
 
 function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges }) {
   return (
@@ -43,7 +45,7 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
             ))}
           </div>
         ) : (
-          <small>{complete ? 'DONE!' : count}</small>
+          <small>{count}</small>
         )}
       </div>
 
@@ -70,6 +72,8 @@ function getGreeting() {
 
 export function RoundsDashboard({ data, setPage, startRound }) {
   const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
+  const [medSignoffsAM, setMedSignoffsAM] = useState({ cleaning: [], medication: [] });
+  const [medSignoffsPM, setMedSignoffsPM] = useState({ cleaning: [], medication: [] });
   const [upcomingVetEvents, setUpcomingVetEvents] = useState([]);
   const [checklistSignoffs, setChecklistSignoffs] = useState({ AM: null, PM: null });
 
@@ -81,6 +85,19 @@ export function RoundsDashboard({ data, setPage, startRound }) {
       .then(setCleaningSignoffs)
       .catch(console.error);
   }, [animals.length]);
+
+  useEffect(() => {
+    const careDate = todayDateString();
+    Promise.all([
+      fetchDailyCareSignoffs({ careDate, shift: 'AM' }),
+      fetchDailyCareSignoffs({ careDate, shift: 'PM' }),
+    ])
+      .then(([am, pm]) => {
+        setMedSignoffsAM(am);
+        setMedSignoffsPM(pm);
+      })
+      .catch(console.error);
+  }, [meds.length]);
 
   useEffect(() => {
     fetchUpcomingVetEvents({ days: 7 })
@@ -128,9 +145,45 @@ export function RoundsDashboard({ data, setPage, startRound }) {
     ? Math.round(((totalCats - pmRemaining) / totalCats) * 100)
     : 0;
 
-  const medTotal = meds.length || 0;
-  const medComplete = medTotal === 0;
-  const medPercent = medComplete ? 100 : 0;
+  // FIXED: previously medTotal/medComplete/medPercent never checked any real
+  // signoff data — medComplete was only true if there were literally zero
+  // medications, and medPercent could only ever be 0 or 100. Now this counts
+  // every (animal, medication, shift) combination actually due today across
+  // both AM and PM, and checks it against real medication_signoffs rows —
+  // the same signoff data Meds.jsx and RoundKennels.jsx already use.
+  const { medTotal, medDoneCount } = useMemo(() => {
+    const givenKeys = new Set();
+    for (const row of medSignoffsAM.medication || []) {
+      givenKeys.add(`${row.animal_id}:${row.medication_id}:AM`);
+    }
+    for (const row of medSignoffsPM.medication || []) {
+      givenKeys.add(`${row.animal_id}:${row.medication_id}:PM`);
+    }
+
+    let total = 0;
+    let done = 0;
+
+    for (const med of meds) {
+      const needsAM = medNeededForShift(med, 'AM');
+      const needsPM = medNeededForShift(med, 'PM');
+
+      if (needsAM) {
+        total += 1;
+        if (givenKeys.has(`${med.animalId}:${med.id}:AM`)) done += 1;
+      }
+      if (needsPM) {
+        total += 1;
+        if (givenKeys.has(`${med.animalId}:${med.id}:PM`)) done += 1;
+      }
+    }
+
+    return { medTotal: total, medDoneCount: done };
+  }, [meds, medSignoffsAM, medSignoffsPM]);
+
+  const medComplete = medTotal > 0 && medDoneCount === medTotal;
+  const medPercent = medTotal
+    ? Math.round((medDoneCount / medTotal) * 100)
+    : 100;
 
   const vetSummary = summarizeVetEvents(upcomingVetEvents);
 
@@ -207,7 +260,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
           <RoundCard
             icon={Pill}
             title="Medication Round"
-            subtitle={`${meds.length} medications due`}
+            subtitle={`${medTotal - medDoneCount} medication${(medTotal - medDoneCount) === 1 ? '' : 's'} due`}
             count={`${medPercent}% complete`}
             complete={medComplete}
             tone="purple"
@@ -231,7 +284,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
 
         <div className="roundGlanceGrid cleanStatsGrid">
           <GlanceCard label="Tasks Due" value={careTasks.length} tone="green" />
-          <GlanceCard label="Meds Due" value={meds.length} tone="blue" />
+          <GlanceCard label="Meds Due" value={medTotal - medDoneCount} tone="blue" />
           <GlanceCard label="Cats" value={animals.length} tone="white" />
         </div>
       </section>

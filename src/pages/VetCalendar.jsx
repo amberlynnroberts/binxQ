@@ -11,8 +11,8 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { isArchivedAnimal, isInCustodyAnimal } from '../lib/animalFilters';
 import { SearchableSelect } from '../components/SearchableSelect';
+import { fetchKennelCheckData } from '../lib/api';
 import {
   addVetEvent,
   completeVetEvent,
@@ -92,17 +92,42 @@ function QuickTemplateButton({ label, type, name, onClick }) {
 }
 
 export function VetCalendar({ data, setPage }) {
-  // Filter to only in-custody animals (exclude Adopted, Happy in Home, Deceased, Unavailable Foster)
+  // The app-wide `data.animals` prop already excludes archived statuses
+  // (adopted, healthy in home, etc.) at the source, in fetchKennelCheckData
+  // — correct for daily-care pages, but too narrow for Vet Calendar, which
+  // needs to show/schedule events for animals like "Healthy In Home" too.
+  // So this page fetches its own broader list directly instead of relying
+  // on the shared `data` prop.
+  const [allAnimalsRaw, setAllAnimalsRaw] = useState(data?.animals || []);
+
+  useEffect(() => {
+    fetchKennelCheckData({ includeRemoved: true })
+      .then(result => setAllAnimalsRaw(result.animals || []))
+      .catch(console.error);
+  }, []);
+
+  // Only excludes animals that have died — 'Deceased', 'Died in Care', and
+  // 'Euthanized' are treated the same way here since none of them can have
+  // a vet appointment. Everything else (adopted, in foster, healthy in
+  // home, etc.) is selectable. Sorted alphabetically by name.
   const animals = useMemo(() => {
-    return (data?.animals || [])
-      .filter(animal => !isArchivedAnimal(animal))
-      .filter(isInCustodyAnimal);
-  }, [data]);
+    const deceasedStatuses = ['deceased', 'died in care', 'euthanized'];
+    return allAnimalsRaw
+      .filter(animal => {
+        const status = String(animal?.shelterluv_status || animal?.status || '').trim().toLowerCase();
+        return !deceasedStatuses.includes(status);
+      })
+      .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+  }, [allAnimalsRaw]);
 
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(blankEvent);
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState('All');
+  // NEW: separate from the event-type `filter` above — this tracks which
+  // stat card is active (Overdue / Due Soon / All), so those cards actually
+  // filter the list instead of being decorative.
+  const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [completedBy, setCompletedBy] = useState('');
   const [message, setMessage] = useState('');
@@ -130,6 +155,9 @@ export function VetCalendar({ data, setPage }) {
     return events.filter(event => {
       const typeMatch = filter === 'All' || event.event_type === filter;
       if (!typeMatch) return false;
+
+      if (statusFilter !== 'All' && getVetEventStatus(event) !== statusFilter) return false;
+
       if (!q) return true;
 
       const haystack = [
@@ -144,7 +172,7 @@ export function VetCalendar({ data, setPage }) {
 
       return haystack.includes(q);
     });
-  }, [events, filter, search, animals]);
+  }, [events, filter, statusFilter, search, animals]);
 
   const grouped = useMemo(() => groupByDate(filteredEvents), [filteredEvents]);
 
@@ -191,6 +219,10 @@ export function VetCalendar({ data, setPage }) {
   }
 
   async function markComplete(eventId) {
+    if (!completedBy.trim()) {
+      setMessage('Enter your initials above before marking an event complete.');
+      return;
+    }
     try {
       await completeVetEvent({ eventId, completedBy: completedBy || 'Unknown' });
       setMessage('Vet event completed.');
@@ -220,23 +252,24 @@ export function VetCalendar({ data, setPage }) {
 
     return (
       <div className={`vetEventCard ${statusClass(status)}`}>
-        <div className="vetEventIcon">
-        </div>
-
         <div className="vetEventMain">
           <div className="vetEventTitle">
-            <b>{event.event_name} </b>
-            <span>{status}</span>
+            <b>{event.event_name}</b>
+            <span className={`vetStatusBadge ${statusClass(status)}`}>{status}</span>
           </div>
 
           <small>
-            {event.event_type} · {getAnimalName(animals, event.animal_id)} · {getAnimalKennel(animals, event.animal_id) }
+            {event.event_type} · {getAnimalName(animals, event.animal_id)} · {getAnimalKennel(animals, event.animal_id)}
           </small>
 
           {event.appointment_at ? (
             <small className="vetTimeLine">
               <Clock size={13}/>
-              {new Date(event.appointment_at).toLocaleString()}
+              {new Date(event.appointment_at).toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                dateStyle: 'medium',
+                timeStyle: 'short'
+              })} ET
             </small>
           ) : (
             <small className="vetTimeLine">
@@ -253,7 +286,7 @@ export function VetCalendar({ data, setPage }) {
         </div>
 
         <div className="vetEventActions">
-          <button type="button" onClick={() => markComplete(event.id)} title="Complete">
+          <button type="button" onClick={() => markComplete(event.id)} title="Mark complete">
             <CheckCircle2 size={18}/>
           </button>
 
@@ -282,53 +315,34 @@ export function VetCalendar({ data, setPage }) {
         </div>
       </section>
 
-      {grouped.length === 0 ? (
-        <section className="vetCalendarEmpty">
-          <CheckCircle2 size={34}/>
-          <h2>No vet events found</h2>
-          <p>Add a vaccine, appointment, surgery, or follow-up.</p>
-        </section>
-      ) : (
-        <div className="vetDateGroups improved">
-          {grouped.map(([date, eventsForDate]) => (
-            <section className="vetDateGroup improved" key={date}>
-              <div className="vetDateHeader">
-                <h2>{formatDateLabel(date)}</h2>
-                <span>{eventsForDate.length}</span>
-              </div>
-
-              <div className="vetEventList">
-                {eventsForDate.map(event => (
-                  <EventCard key={event.id} event={event}/>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
-
+      {/* Stats now actually filter the list below when clicked */}
       <section className="vetStatsGrid improved">
-        <button type="button" className={counts.overdue ? 'danger' : ''} onClick={() => setFilter('All')}>
+        <button
+          type="button"
+          className={`${counts.overdue ? 'danger' : ''} ${statusFilter === 'Overdue' ? 'active' : ''}`}
+          onClick={() => setStatusFilter(prev => prev === 'Overdue' ? 'All' : 'Overdue')}
+        >
           <b>{counts.overdue}</b>
           <small>Overdue</small>
         </button>
 
-        <button type="button" className={counts.dueSoon ? 'warning' : ''} onClick={() => setFilter('All')}>
+        <button
+          type="button"
+          className={`${counts.dueSoon ? 'warning' : ''} ${statusFilter === 'Due Soon' ? 'active' : ''}`}
+          onClick={() => setStatusFilter(prev => prev === 'Due Soon' ? 'All' : 'Due Soon')}
+        >
           <b>{counts.dueSoon}</b>
           <small>Due in 7 Days</small>
         </button>
 
-        <button type="button" onClick={() => setFilter('All')}>
+        <button
+          type="button"
+          className={statusFilter === 'All' ? 'active' : ''}
+          onClick={() => setStatusFilter('All')}
+        >
           <b>{counts.total}</b>
           <small>Open Items</small>
         </button>
-      </section>
-
-      <section className="vetQuickAddPanel">
-        <QuickTemplateButton label="💉" type="Vaccine" name="Add Vaccine" onClick={openQuickAdd}/>
-        <QuickTemplateButton label="📅" type="Vet Appointment" name="Add Appointment" onClick={openQuickAdd}/>
-        <QuickTemplateButton label="🐾" type="Spay/Neuter" name="Spay/Neuter" onClick={openQuickAdd}/>
-        <QuickTemplateButton label="🔁" type="Follow Up" name="Follow Up" onClick={openQuickAdd}/>
       </section>
 
       <section className="vetCalendarToolbar improved">
@@ -341,9 +355,9 @@ export function VetCalendar({ data, setPage }) {
           />
         </label>
 
-        <label>
+        {/* <label>
           <Filter size={16}/>
-          Filter
+          Type
           <select value={filter} onChange={e => setFilter(e.target.value)}>
             <option>All</option>
             {vetEventTypes.map(type => <option key={type}>{type}</option>)}
@@ -351,24 +365,42 @@ export function VetCalendar({ data, setPage }) {
         </label>
 
         <label>
-          Completed By
-          <input value={completedBy} onChange={e => setCompletedBy(e.target.value)} placeholder="Initials"/>
+          Your Initials
+          <input
+            value={completedBy}
+            onChange={e => setCompletedBy(e.target.value)}
+            placeholder="Used when marking complete"
+          />
         </label>
 
         <button type="button" className="roundPrimary" onClick={() => openQuickAdd('Vaccine', '')}>
           <Plus size={18}/>
           Add Event
-        </button>
+        </button> */}
       </section>
 
-      {message && <p className={message.includes('Could') ? 'error' : 'success'}>{message}</p>}
+      {statusFilter !== 'All' && (
+        <button type="button" className="vetFilterChip" onClick={() => setStatusFilter('All')}>
+          Filtering: {statusFilter}
+          <X size={14}/>
+        </button>
+      )}
+
+      <section className="vetQuickAddPanel">
+        <QuickTemplateButton label="💉" type="Vaccine" name="Add Vaccine" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="📅" type="Vet Appointment" name="Add Appointment" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="🐾" type="Spay/Neuter" name="Spay/Neuter" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="🔁" type="Follow Up" name="Follow Up" onClick={openQuickAdd}/>
+      </section>
+
+      {message && <p className={message.includes('Could') || message.includes('Enter') ? 'error' : 'success'}>{message}</p>}
 
       {showAdd && (
         <form className="vetEventForm improved" onSubmit={submitEvent}>
           <div className="vetFormHeader">
             <div>
               <h2>Add Vet Event</h2>
-              <small>Choose any cat in custody (not Adopted, Happy in Home, Deceased, or Unavailable Foster).</small>
+              <small>Choose any cat (all statuses except Deceased, Died in Care, or Euthanized).</small>
             </div>
 
             <button type="button" onClick={() => setShowAdd(false)}>
@@ -452,6 +484,35 @@ export function VetCalendar({ data, setPage }) {
 
           <button className="roundPrimary wide">Save Vet Event</button>
         </form>
+      )}
+
+      {grouped.length === 0 ? (
+        <section className="vetCalendarEmpty">
+          <CheckCircle2 size={34}/>
+          <h2>{statusFilter !== 'All' || filter !== 'All' || search ? 'No matching events' : 'No vet events found'}</h2>
+          <p>
+            {statusFilter !== 'All' || filter !== 'All' || search
+              ? 'Try clearing the search or filters above.'
+              : 'Add a vaccine, appointment, surgery, or follow-up.'}
+          </p>
+        </section>
+      ) : (
+        <div className="vetDateGroups improved">
+          {grouped.map(([date, eventsForDate]) => (
+            <section className="vetDateGroup improved" key={date}>
+              <div className="vetDateHeader">
+                <h2>{formatDateLabel(date)}</h2>
+                <span>{eventsForDate.length}</span>
+              </div>
+
+              <div className="vetEventList">
+                {eventsForDate.map(event => (
+                  <EventCard key={event.id} event={event}/>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       )}
     </main>
   );
