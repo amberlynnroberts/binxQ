@@ -40,7 +40,20 @@ function getAnimalName(animals, animalId) {
 }
 
 function getAnimalKennel(animals, animalId) {
-  return animals.find(a => a.id === animalId)?.kennel || 'Unassigned';
+  const animal = animals.find(a => a.id === animalId);
+  if (!animal) return 'Unassigned';
+  if (animal.kennel && animal.kennel !== '?') return animal.kennel;
+
+  // No kennel number assigned — fall back to the animal's current status
+  // location (Cat Lounge, Foster, etc.) instead of a generic 'Unassigned'.
+  const s = String(animal.shelterluv_status || animal.status || '').toLowerCase();
+  if (s.includes('lounge')) return 'Cat Lounge';
+  if (s.includes('foster')) return 'Foster';
+  if (s.includes('quarantine')) return 'Quarantine';
+  if (s.includes('healthy in home')) return 'Healthy In Home';
+  if (s.includes('adopted')) return 'Adopted';
+
+  return animal.status || animal.shelterluv_status || 'Unassigned';
 }
 
 function groupByDate(events) {
@@ -355,7 +368,7 @@ export function VetCalendar({ data, setPage }) {
           />
         </label>
 
-        {/* <label>
+        <label>
           <Filter size={16}/>
           Type
           <select value={filter} onChange={e => setFilter(e.target.value)}>
@@ -376,7 +389,7 @@ export function VetCalendar({ data, setPage }) {
         <button type="button" className="roundPrimary" onClick={() => openQuickAdd('Vaccine', '')}>
           <Plus size={18}/>
           Add Event
-        </button> */}
+        </button>
       </section>
 
       {statusFilter !== 'All' && (
