@@ -3,21 +3,25 @@ import { supabase } from './supabase';
 export function medNeededForShift(med, shift) {
   const schedule = String(med.schedule || '').toLowerCase();
 
-  // Don't show if start_date is in the future
+  // FIXED: new Date("2026-07-06") parses date-only strings as UTC midnight,
+  // not local midnight. In Eastern time that UTC instant falls on the
+  // previous local calendar day, so .setHours(0,0,0,0) afterward locked in
+  // a date shifted one day earlier than intended. A medication ending
+  // "today" was being treated as already expired. Appending T00:00:00
+  // forces the string to be parsed as local time instead, matching how
+  // `today` itself is constructed below.
   if (med.startDate) {
-    const start = new Date(med.startDate);
+    const start = new Date(`${med.startDate}T00:00:00`);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    start.setHours(0, 0, 0, 0);
     if (start > today) return false;
   }
 
   // Don't show if end_date has passed
   if (med.endDate) {
-    const end = new Date(med.endDate);
+    const end = new Date(`${med.endDate}T00:00:00`);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
     if (end < today) return false;
   }
 
