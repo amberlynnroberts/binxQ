@@ -42,6 +42,7 @@ const commonSupplyItems = [
   'Bleach',
   'Rescue disinfectant',
   'Trash bags',
+  'Dishwasher Pods',
   'Laundry detergent',
   'Towels',
   'Pee pads',
@@ -272,7 +273,6 @@ export function TextAlert() {
           <select value={alertForm.location} onChange={e => setAlert('location', e.target.value)}>
             <option>Quarantine room</option>
             <option>Cat room</option>
-            <option>Dog area</option>
             <option>Laundry</option>
             <option>Med station</option>
             <option>Office</option>

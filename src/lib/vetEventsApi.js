@@ -50,6 +50,24 @@ export function getVetEventStatus(event) {
   return 'Upcoming';
 }
 
+export async function fetchVetEventsForAnimal(animalId) {
+  if (!isSupabaseConfigured) return [];
+  if (!animalId) return [];
+
+  // Unlike fetchVetEvents (which defaults to open items only, for the
+  // dashboard/calendar), this pulls the FULL history for one animal —
+  // completed and open both — for use in an adoption/medical record.
+  const { data, error } = await supabase
+    .from('vet_events')
+    .select('*')
+    .eq('animal_id', animalId)
+    .order('due_date', { ascending: true })
+    .order('appointment_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function fetchVetEvents({ includeCompleted = false } = {}) {
   if (!isSupabaseConfigured) return [];
 
@@ -110,10 +128,62 @@ export async function addVetEvent({
       event_type: eventType,
       event_name: eventName.trim(),
       due_date: dueDate || null,
-      appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,      location: location || null,
+      // FIXED: appointmentAt comes from a <input type="datetime-local">,
+      // which gives a naive string like "2026-07-04T14:00" with NO timezone
+      // marker. Sending that straight to Postgres caused it to be stored
+      // as if it were UTC — so a staff member picking 2:00 PM Eastern was
+      // actually saved as 2:00 PM UTC (10:00 AM Eastern during EDT), a
+      // 4-hour error. `new Date(...)` correctly parses a timezone-less
+      // string as the browser's LOCAL time, so calling .toISOString() here
+      // converts it to the correct UTC instant before it's saved. This
+      // assumes the device entering the appointment is set to Eastern time,
+      // which holds for on-site HBCM staff.
+      appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,
+      location: location || null,
       veterinarian: veterinarian || null,
       notes: notes || null
     })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateVetEvent({
+  eventId,
+  eventType,
+  eventName,
+  dueDate = null,
+  appointmentAt = null,
+  location = '',
+  veterinarian = '',
+  notes = ''
+}) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+  if (!eventId) throw new Error('Event ID is required');
+  if (!eventName?.trim()) throw new Error('Event name is required');
+
+  if (!dueDate && !appointmentAt) {
+    throw new Error('Due date or appointment date/time is required');
+  }
+
+  const { data, error } = await supabase
+    .from('vet_events')
+    .update({
+      event_type: eventType,
+      event_name: eventName.trim(),
+      due_date: dueDate || null,
+      // Same fix as addVetEvent: a <input type="datetime-local"> gives a
+      // naive local-time string with no timezone marker. new Date(...)
+      // correctly parses that as the browser's local time, and
+      // .toISOString() converts it to the correct UTC instant for storage.
+      appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,
+      location: location || null,
+      veterinarian: veterinarian || null,
+      notes: notes || null
+    })
+    .eq('id', eventId)
     .select()
     .single();
 

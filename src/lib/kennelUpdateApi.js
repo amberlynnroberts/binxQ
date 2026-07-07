@@ -35,3 +35,32 @@ export async function updateAnimalKennelNumber({ animalId, shelterluvId, kennelN
 
   return cleanKennel;
 }
+
+// Separate from updateAnimalKennelNumber on purpose — that function requires
+// a non-blank kennel number (a reasonable guard when SETTING one), so it
+// can't also be used to clear an assignment. This clears kennel_number back
+// to null directly, for cases like an overnight foster stay ending or an
+// old quarantine placement no longer being current.
+export async function clearAnimalKennelNumber({ animalId, shelterluvId }) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+
+  const { error: animalError } = await supabase
+    .from('animals')
+    .update({
+      kennel_number: null,
+      last_synced_at: new Date().toISOString()
+    })
+    .eq('id', animalId);
+
+  if (animalError) throw animalError;
+
+  if (shelterluvId) {
+    await supabase
+      .from('shelterluv_animals')
+      .update({ location: null })
+      .eq('shelterluv_id', shelterluvId)
+      .then(() => null);
+  }
+
+  return null;
+}

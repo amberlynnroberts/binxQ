@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  Pencil,
   Plus,
   Search,
   Syringe,
@@ -21,6 +22,7 @@ import {
   fetchVetEvents,
   getVetEventStatus,
   todayDateString,
+  updateVetEvent,
   vetEventTypes
 } from '../lib/vetEventsApi';
 
@@ -91,6 +93,13 @@ function formatDateLabel(dateString) {
   });
 }
 
+function toDatetimeLocalValue(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function QuickTemplateButton({ label, type, name, onClick }) {
   return (
     <button
@@ -136,6 +145,7 @@ export function VetCalendar({ data, setPage }) {
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(blankEvent);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [filter, setFilter] = useState('All');
   // NEW: separate from the event-type `filter` above — this tracks which
   // stat card is active (Overdue / Due Soon / All), so those cards actually
@@ -194,10 +204,29 @@ export function VetCalendar({ data, setPage }) {
   }
 
   function openQuickAdd(eventType = 'Vaccine', eventName = '') {
+    setEditingEventId(null);
     setForm({
       ...blankEvent,
       eventType,
       eventName
+    });
+    setShowAdd(true);
+    setTimeout(() => {
+      document.querySelector('.vetEventForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+
+  function openEditEvent(event) {
+    setEditingEventId(event.id);
+    setForm({
+      animalId: event.animal_id || '',
+      eventType: event.event_type || 'Vaccine',
+      eventName: event.event_name || '',
+      dueDate: event.due_date || '',
+      appointmentAt: toDatetimeLocalValue(event.appointment_at),
+      location: event.location || '',
+      veterinarian: event.veterinarian || '',
+      notes: event.notes || ''
     });
     setShowAdd(true);
     setTimeout(() => {
@@ -210,34 +239,52 @@ export function VetCalendar({ data, setPage }) {
     setMessage('');
 
     try {
-      await addVetEvent({
-        animalId: form.animalId,
-        eventType: form.eventType,
-        eventName: form.eventName,
-        dueDate: form.dueDate || null,
-        appointmentAt: form.appointmentAt || null,
-        location: form.location,
-        veterinarian: form.veterinarian,
-        notes: form.notes
-      });
+      if (editingEventId) {
+        await updateVetEvent({
+          eventId: editingEventId,
+          eventType: form.eventType,
+          eventName: form.eventName,
+          dueDate: form.dueDate || null,
+          appointmentAt: form.appointmentAt || null,
+          location: form.location,
+          veterinarian: form.veterinarian,
+          notes: form.notes
+        });
+        setMessage('Vet event updated.');
+      } else {
+        await addVetEvent({
+          animalId: form.animalId,
+          eventType: form.eventType,
+          eventName: form.eventName,
+          dueDate: form.dueDate || null,
+          appointmentAt: form.appointmentAt || null,
+          location: form.location,
+          veterinarian: form.veterinarian,
+          notes: form.notes
+        });
+        setMessage('Vet event added.');
+      }
 
       setForm(blankEvent);
+      setEditingEventId(null);
       setShowAdd(false);
-      setMessage('Vet event added.');
       await load();
     } catch (err) {
       console.error(err);
-      setMessage(err.message || 'Could not add vet event.');
+      setMessage(err.message || 'Could not save vet event.');
     }
   }
 
   async function markComplete(eventId) {
-    if (!completedBy.trim()) {
-      setMessage('Enter your initials above before marking an event complete.');
+    const initials = window.prompt('Enter your initials to mark this event complete:', completedBy || '');
+    if (initials === null) return; // cancelled
+    if (!initials.trim()) {
+      setMessage('Initials are required to mark an event complete.');
       return;
     }
+    setCompletedBy(initials.trim());
     try {
-      await completeVetEvent({ eventId, completedBy: completedBy || 'Unknown' });
+      await completeVetEvent({ eventId, completedBy: initials.trim() });
       setMessage('Vet event completed.');
       await load();
     } catch (err) {
@@ -299,6 +346,10 @@ export function VetCalendar({ data, setPage }) {
         </div>
 
         <div className="vetEventActions">
+          <button type="button" onClick={() => openEditEvent(event)} title="Edit">
+            <Pencil size={18}/>
+          </button>
+
           <button type="button" onClick={() => markComplete(event.id)} title="Mark complete">
             <CheckCircle2 size={18}/>
           </button>
@@ -377,15 +428,6 @@ export function VetCalendar({ data, setPage }) {
           </select>
         </label>
 
-        <label>
-          Your Initials
-          <input
-            value={completedBy}
-            onChange={e => setCompletedBy(e.target.value)}
-            placeholder="Used when marking complete"
-          />
-        </label>
-
         <button type="button" className="roundPrimary" onClick={() => openQuickAdd('Vaccine', '')}>
           <Plus size={18}/>
           Add Event
@@ -412,26 +454,28 @@ export function VetCalendar({ data, setPage }) {
         <form className="vetEventForm improved" onSubmit={submitEvent}>
           <div className="vetFormHeader">
             <div>
-              <h2>Add Vet Event</h2>
+              <h2>{editingEventId ? 'Edit Vet Event' : 'Add Vet Event'}</h2>
               <small>Choose any cat (all statuses except Deceased, Died in Care, or Euthanized).</small>
             </div>
 
-            <button type="button" onClick={() => setShowAdd(false)}>
+            <button type="button" onClick={() => { setShowAdd(false); setEditingEventId(null); }}>
               <X size={18}/>
             </button>
           </div>
 
-          <label className="wide">
-            Cat
-            <SearchableSelect
-              value={form.animalId}
-              onChange={(value) => setField('animalId', value)}
-              options={animals}
-              getLabel={(animal) => animal.name}
-              getValue={(animal) => animal.id}
-              placeholder="Select cat..."
-            />
-          </label>
+          {!editingEventId && (
+            <label className="wide">
+              Cat
+              <SearchableSelect
+                value={form.animalId}
+                onChange={(value) => setField('animalId', value)}
+                options={animals}
+                getLabel={(animal) => animal.name}
+                getValue={(animal) => animal.id}
+                placeholder="Select cat..."
+              />
+            </label>
+          )}
 
           <label>
             Event Type
@@ -495,7 +539,7 @@ export function VetCalendar({ data, setPage }) {
             />
           </label>
 
-          <button className="roundPrimary wide">Save Vet Event</button>
+          <button className="roundPrimary wide">{editingEventId ? 'Save Changes' : 'Save Vet Event'}</button>
         </form>
       )}
 

@@ -23,6 +23,7 @@ import { VetCalendar } from './pages/VetCalendar';
 import PasscodeGate from './components/PasscodeGate';
 import FeedbackModal from './components/FeedbackModal';
 import QuarantineCardGenerator from './pages/QuarantineCardGenerator';
+import { AdoptionRecords } from './pages/AdoptionRecords';
 
 export default function App() {
   const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -295,6 +296,10 @@ export default function App() {
         
         {page === 'reports' && (
           <Reports data={data} />
+        )}
+
+        {page === 'adoption-records' && (
+          <AdoptionRecords setPage={setPage} />
         )}
 
         {page === 'text-alert' && <TextAlert />}

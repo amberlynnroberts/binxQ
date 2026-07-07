@@ -41,6 +41,11 @@ export function More({ reload, dbStatus, setDbStatus, setPage }) {
         Vet Calendar
       </button>
 
+      <button 
+        onClick={() => setPage('adoption-records')}>
+        Adoption Records
+      </button>
+
       <button
         className="actionCardButton"
         onClick={syncEverything}>

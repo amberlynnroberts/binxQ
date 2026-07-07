@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Plus, Search, Pencil, Check, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Plus, Search, Pencil, Check, X, Trash2 } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
@@ -8,13 +8,16 @@ import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
 import { todayDateString } from '../lib/careTaskRules';
 import { formatAge } from '../lib/formatAge';
 import { getKennelColorClass } from '../lib/kennelColors.js';
-import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
+import { updateAnimalKennelNumber, clearAnimalKennelNumber } from '../lib/kennelUpdateApi';
 
 function KennelEdit({ animal, onSaved }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(animal.kennel ?? '');
   const [saving, setSaving] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [error, setError] = useState('');
+
+  const hasKennel = Boolean(animal.kennel && animal.kennel !== '?');
 
   async function save(e) {
     e.stopPropagation();
@@ -33,6 +36,26 @@ function KennelEdit({ animal, onSaved }) {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function clear(e) {
+    e.stopPropagation();
+    if (!window.confirm(`Clear ${animal.name}'s kennel assignment?`)) return;
+    setClearing(true);
+    setError('');
+    try {
+      await clearAnimalKennelNumber({
+        animalId: animal.id,
+        shelterluvId: animal.shelterluv_id,
+      });
+      onSaved?.();
+      setEditing(false);
+      setValue('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -60,6 +83,11 @@ function KennelEdit({ animal, onSaved }) {
         <button onClick={save} disabled={saving} style={{ color: '#39d353', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           {saving ? '…' : <Check size={15} />}
         </button>
+        {hasKennel && (
+          <button onClick={clear} disabled={clearing} title="Clear kennel" style={{ color: '#ff8a8a', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            {clearing ? '…' : <Trash2 size={14} />}
+          </button>
+        )}
         <button onClick={cancel} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
           <X size={15} />
         </button>
@@ -69,23 +97,40 @@ function KennelEdit({ animal, onSaved }) {
   }
 
   return (
-    <button
-      onClick={e => { e.stopPropagation(); setEditing(true); setValue(animal.kennel ?? ''); }}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(148,163,184,0.18)',
-        borderRadius: 8, padding: '5px 10px',
-        cursor: 'pointer', fontSize: 12,
-        color: animal.kennel && animal.kennel !== '?' ? '#cbd5e1' : '#64748b',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-      title="Edit kennel"
-    >
-      <Pencil size={11} />
-      {animal.kennel && animal.kennel !== '?' ? animal.kennel : 'Set kennel'}
-    </button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <button
+        onClick={e => { e.stopPropagation(); setEditing(true); setValue(animal.kennel ?? ''); }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(148,163,184,0.18)',
+          borderRadius: 8, padding: '5px 10px',
+          cursor: 'pointer', fontSize: 12,
+          color: hasKennel ? '#cbd5e1' : '#64748b',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+        title="Edit kennel"
+      >
+        <Pencil size={11} />
+        {hasKennel ? animal.kennel : 'Set kennel'}
+      </button>
+
+      {hasKennel && (
+        <button
+          onClick={clear}
+          disabled={clearing}
+          title="Clear kennel assignment"
+          style={{
+            display: 'flex', alignItems: 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#ff8a8a', flexShrink: 0, padding: '5px',
+          }}
+        >
+          {clearing ? '…' : <Trash2 size={14} />}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -94,6 +139,13 @@ function statusLabel(animal, animalView) {
     return animal.kennel && animal.kennel !== '?' ? `Kennel ${animal.kennel.replace(/\D/g, '') || animal.kennel}` : 'No kennel assigned';
   }
   if (animalView === 'rescue') return 'Cat Lounge';
+  if (animalView === 'foster') {
+    // Foster cats don't normally have a kennel, but staff can assign one
+    // temporarily (e.g. an overnight stay after surgery). Show it if set.
+    return animal.kennel && animal.kennel !== '?'
+      ? `Kennel ${animal.kennel.replace(/\D/g, '') || animal.kennel} (overnight)`
+      : 'In foster — no kennel assigned';
+  }
   // archived — show a cleaner status
   const s = String(animal.shelterluv_status || animal.status || '').trim();
   if (!s) return '';
@@ -145,6 +197,11 @@ export function Kennels({
     );
   }
 
+  // Kennel assignment is available in Quarantine (as before) and now Foster
+  // too, since staff sometimes need to give a foster cat a kennel for an
+  // overnight stay (e.g. post-surgery recovery).
+  const showKennelEdit = animalView === 'quarantine' || animalView === 'foster';
+
   return (
     <main>
       <div className="roundsTop">
@@ -162,6 +219,7 @@ export function Kennels({
       <section className="animalFilterPanel">
         <FilterButton value="quarantine" label="Quarantine Only" count={counts.quarantine} />
         <FilterButton value="rescue" label="In Rescue" count={counts.rescue} />
+        <FilterButton value="foster" label="In Foster" count={counts.foster} />
         <FilterButton value="archived" label="Archived" count={counts.archived} />
       </section>
 
@@ -177,6 +235,7 @@ export function Kennels({
       <div className="viewHelper">
         {animalView === 'quarantine' && 'Showing only active quarantine animals.'}
         {animalView === 'rescue' && 'Showing active animals currently in the rescue.'}
+        {animalView === 'foster' && 'Showing cats currently in foster. Assign a kennel below if one needs to stay overnight (e.g. post-surgery).'}
         {animalView === 'archived' && 'Showing archived animals such as adopted, transferred, deceased, or returned.'}
       </div>
 
@@ -187,12 +246,27 @@ export function Kennels({
               ? 'No archived animals found.'
               : animalView === 'rescue'
                 ? 'No active rescue animals found.'
-                : 'No quarantine animals found.'
+                : animalView === 'foster'
+                  ? 'No cats currently in foster.'
+                  : 'No quarantine animals found.'
           } />
         )}
 
         {list.map(a => (
-          <button className="row" key={a.id} onClick={() => select(a.id)} style={{ width: '100%' }}>
+          <div
+            className="row"
+            key={a.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => select(a.id)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                select(a.id);
+              }
+            }}
+            style={{ width: '100%', cursor: 'pointer' }}
+          >
             {animalView === 'quarantine' && (
               <span className={`kennel ${getKennelColorClass(a.kennel)}`}>
                 {kennelShort(a.kennel)}
@@ -213,14 +287,14 @@ export function Kennels({
               </small>
             </span>
 
-            {animalView === 'quarantine' && (
-              <div onClick={e => e.stopPropagation()}>
+            {showKennelEdit && (
+              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                 <KennelEdit animal={a} onSaved={onAnimalUpdated} />
               </div>
             )}
 
             <ChevronRight size={18} style={{ color: 'var(--round-muted)', flexShrink: 0 }} />
-          </button>
+          </div>
         ))}
       </div>
     </main>

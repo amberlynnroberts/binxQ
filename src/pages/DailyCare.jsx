@@ -9,8 +9,6 @@ function signedMap(rows, keyBuilder) {
 }
 
 export function DailyCare({ data, reload }) {
-  console.log('meds received:', data?.meds);
-  console.log('animals received:', data?.animals);
   const [shift, setShift] = useState('AM');
   const [careDate, setCareDate] = useState(todayDateString());
   const [signedBy, setSignedBy] = useState('');
@@ -25,18 +23,17 @@ export function DailyCare({ data, reload }) {
   const cleaningMap = useMemo(() => signedMap(signoffs.cleaning, row => row.animal_id), [signoffs.cleaning]);
   const medMap = useMemo(() => signedMap(signoffs.medication, row => `${row.animal_id}:${row.medication_id}`), [signoffs.medication]);
 
-const medsByAnimal = useMemo(() => {
-  const map = new Map();
-  for (const med of meds) {
-    console.log('med:', med.name, 'active:', med.active, 'schedule:', med.schedule, 'neededForShift:', medNeededForShift(med, shift));
-    if (!med.active) continue;
-    if (!medNeededForShift(med, shift)) continue;
-    const list = map.get(med.animalId) || [];
-    list.push(med);
-    map.set(med.animalId, list);
-  }
-  return map;
-}, [meds, shift]);
+  const medsByAnimal = useMemo(() => {
+    const map = new Map();
+    for (const med of meds) {
+      if (!med.active) continue;
+      if (!medNeededForShift(med, shift)) continue;
+      const list = map.get(med.animalId) || [];
+      list.push(med);
+      map.set(med.animalId, list);
+    }
+    return map;
+  }, [meds, shift]);
 
   const stats = useMemo(() => {
     const cleaningTotal = animals.length;
@@ -67,16 +64,24 @@ const medsByAnimal = useMemo(() => {
     loadSignoffs().catch(console.error);
   }, [careDate, shift]);
 
-  function requireName() {
-    if (!signedBy.trim()) {
-      showMessage('Enter your name or initials first.');
-      return false;
-    }
-    return true;
+  // Prompts directly for a name/initials if none is already set, rather than
+  // silently blocking the click and relying on a message elsewhere on the
+  // page (which may not be visible depending on scroll position/layout).
+  // Returns the name to use, or null if the person cancelled.
+  function getSignedByOrPrompt() {
+    const existing = signedBy.trim();
+    if (existing) return existing;
+
+    const entered = window.prompt('Enter your name or initials:');
+    if (!entered || !entered.trim()) return null;
+
+    setSignedBy(entered.trim());
+    return entered.trim();
   }
 
   async function toggleCleaning(animal) {
-    if (!requireName()) return;
+    const name = getSignedByOrPrompt();
+    if (!name) return;
 
     const key = `cleaning:${animal.id}`;
     const alreadySigned = cleaningMap.has(animal.id);
@@ -88,7 +93,7 @@ const medsByAnimal = useMemo(() => {
         await removeCleaningSignoff({ animalId: animal.id, shift, careDate });
         showMessage(`${animal.name} cleaning sign-off removed.`);
       } else {
-        await signOffCleaning({ animalId: animal.id, shift, careDate, signedBy, notes: notesByKey[key] || '' });
+        await signOffCleaning({ animalId: animal.id, shift, careDate, signedBy: name, notes: notesByKey[key] || '' });
         showMessage(`${animal.name} ${shift} cleaning signed off.`);
       }
 
@@ -100,7 +105,8 @@ const medsByAnimal = useMemo(() => {
   }
 
   async function toggleMed(animal, med) {
-    if (!requireName()) return;
+    const name = getSignedByOrPrompt();
+    if (!name) return;
 
     const key = `med:${animal.id}:${med.id}`;
     const mapKey = `${animal.id}:${med.id}`;
@@ -113,7 +119,7 @@ const medsByAnimal = useMemo(() => {
         await removeMedicationSignoff({ animalId: animal.id, medicationId: med.id, shift, careDate });
         showMessage(`${animal.name} medication sign-off removed.`);
       } else {
-        await signOffMedication({ animalId: animal.id, medicationId: med.id, shift, careDate, givenBy: signedBy, notes: notesByKey[key] || '' });
+        await signOffMedication({ animalId: animal.id, medicationId: med.id, shift, careDate, givenBy: name, notes: notesByKey[key] || '' });
         showMessage(`${animal.name} ${med.name} marked given.`);
       }
 
@@ -216,10 +222,6 @@ const medsByAnimal = useMemo(() => {
                     {signoff && <small>Signed by {signoff.signed_by} at {new Date(signoff.created_at).toLocaleTimeString()}</small>}
                   </div>
                 </div>
-
-                {/* {!signoff && (
-                  <input className="inlineNote" value={noteValue(key)} onChange={e => setNote(key, e.target.value)} placeholder="Optional cleaning note" />
-                )} */}
               </article>
             );
           })}
