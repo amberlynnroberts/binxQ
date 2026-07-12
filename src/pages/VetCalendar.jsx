@@ -16,6 +16,7 @@ import { SearchableSelect } from '../components/SearchableSelect';
 import { fetchKennelCheckData } from '../lib/api';
 import {
   addVetEvent,
+  calculateNextDueDate,
   completeVetEvent,
   deleteVetEvent,
   eventDateValue,
@@ -34,7 +35,10 @@ const blankEvent = {
   appointmentAt: '',
   location: '',
   veterinarian: '',
-  notes: ''
+  notes: '',
+  dateGiven: '',
+  vaccineDuration: '1 year',
+  fleaTickInterval: '30 days'
 };
 
 function getAnimalName(animals, animalId) {
@@ -203,6 +207,23 @@ export function VetCalendar({ data, setPage }) {
     setForm(prev => ({ ...prev, [key]: value }));
   }
 
+  // Auto-calculates Due Date whenever Date Given / duration / interval
+  // change, for Rabies (1 year / 3 year) and Flea/Tick (30 days). Flea/Tick
+  // "other" intentionally returns null from calculateNextDueDate, leaving
+  // Due Date as whatever the person types in manually.
+  useEffect(() => {
+    const calculated = calculateNextDueDate({
+      dateGiven: form.dateGiven,
+      eventType: form.eventType,
+      vaccineDuration: form.vaccineDuration,
+      fleaTickInterval: form.fleaTickInterval
+    });
+    if (calculated) {
+      setForm(prev => ({ ...prev, dueDate: calculated }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.dateGiven, form.eventType, form.vaccineDuration, form.fleaTickInterval]);
+
   function openQuickAdd(eventType = 'Vaccine', eventName = '') {
     setEditingEventId(null);
     setForm({
@@ -226,7 +247,10 @@ export function VetCalendar({ data, setPage }) {
       appointmentAt: toDatetimeLocalValue(event.appointment_at),
       location: event.location || '',
       veterinarian: event.veterinarian || '',
-      notes: event.notes || ''
+      notes: event.notes || '',
+      dateGiven: event.date_given || '',
+      vaccineDuration: event.vaccine_duration || '1 year',
+      fleaTickInterval: event.flea_tick_interval || '30 days'
     });
     setShowAdd(true);
     setTimeout(() => {
@@ -238,6 +262,13 @@ export function VetCalendar({ data, setPage }) {
     e.preventDefault();
     setMessage('');
 
+    // Only persist vaccineDuration/fleaTickInterval when relevant to the
+    // selected event type, so switching types doesn't leave stale data
+    // from a previous selection attached to the saved record.
+    const dateGiven = form.dateGiven || null;
+    const vaccineDuration = form.eventType === 'Rabies' ? form.vaccineDuration : null;
+    const fleaTickInterval = form.eventType === 'Flea/Tick Preventative' ? form.fleaTickInterval : null;
+
     try {
       if (editingEventId) {
         await updateVetEvent({
@@ -248,7 +279,10 @@ export function VetCalendar({ data, setPage }) {
           appointmentAt: form.appointmentAt || null,
           location: form.location,
           veterinarian: form.veterinarian,
-          notes: form.notes
+          notes: form.notes,
+          dateGiven,
+          vaccineDuration,
+          fleaTickInterval
         });
         setMessage('Vet event updated.');
       } else {
@@ -260,7 +294,10 @@ export function VetCalendar({ data, setPage }) {
           appointmentAt: form.appointmentAt || null,
           location: form.location,
           veterinarian: form.veterinarian,
-          notes: form.notes
+          notes: form.notes,
+          dateGiven,
+          vaccineDuration,
+          fleaTickInterval
         });
         setMessage('Vet event added.');
       }
@@ -335,6 +372,14 @@ export function VetCalendar({ data, setPage }) {
             <small className="vetTimeLine">
               <CalendarDays size={13}/>
               {date}
+            </small>
+          )}
+
+          {(event.date_given || event.vaccine_duration || event.flea_tick_interval) && (
+            <small>
+              {event.date_given && `Given: ${new Date(`${event.date_given}T00:00:00`).toLocaleDateString(undefined, { dateStyle: 'medium' })}`}
+              {event.vaccine_duration && ` · ${event.vaccine_duration} duration`}
+              {event.flea_tick_interval && ` · ${event.flea_tick_interval === 'other' ? 'custom interval' : event.flea_tick_interval + ' interval'}`}
             </small>
           )}
 
@@ -443,6 +488,9 @@ export function VetCalendar({ data, setPage }) {
 
       <section className="vetQuickAddPanel">
         <QuickTemplateButton label="💉" type="Vaccine" name="Add Vaccine" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="🦠" type="Rabies" name="Rabies" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="🦟" type="Flea/Tick Preventative" name="Flea/Tick" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="🪱" type="Dewormer" name="Dewormer" onClick={openQuickAdd}/>
         <QuickTemplateButton label="📅" type="Vet Appointment" name="Add Appointment" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🐾" type="Spay/Neuter" name="Spay/Neuter" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🔁" type="Follow Up" name="Follow Up" onClick={openQuickAdd}/>
@@ -484,6 +532,59 @@ export function VetCalendar({ data, setPage }) {
             </select>
           </label>
 
+          {form.eventType === 'Rabies' && (
+            <>
+              <label>
+                Date Given
+                <input
+                  type="date"
+                  value={form.dateGiven}
+                  onChange={e => setField('dateGiven', e.target.value)}
+                />
+              </label>
+
+              <label>
+                Vaccine Duration
+                <select value={form.vaccineDuration} onChange={e => setField('vaccineDuration', e.target.value)}>
+                  <option value="1 year">1 Year</option>
+                  <option value="3 year">3 Year</option>
+                </select>
+              </label>
+            </>
+          )}
+
+          {form.eventType === 'Flea/Tick Preventative' && (
+            <>
+              <label>
+                Date Given
+                <input
+                  type="date"
+                  value={form.dateGiven}
+                  onChange={e => setField('dateGiven', e.target.value)}
+                />
+              </label>
+
+              <label>
+                Next Due Interval
+                <select value={form.fleaTickInterval} onChange={e => setField('fleaTickInterval', e.target.value)}>
+                  <option value="30 days">30 Days</option>
+                  <option value="other">Other (enter manually below)</option>
+                </select>
+              </label>
+            </>
+          )}
+
+          {form.eventType === 'Dewormer' && (
+            <label>
+              Date Given
+              <input
+                type="date"
+                value={form.dateGiven}
+                onChange={e => setField('dateGiven', e.target.value)}
+              />
+            </label>
+          )}
+
           <label>
             Event Name
             <input
@@ -495,6 +596,10 @@ export function VetCalendar({ data, setPage }) {
 
           <label>
             Due Date
+            {(form.eventType === 'Rabies' && form.dateGiven) ||
+             (form.eventType === 'Flea/Tick Preventative' && form.dateGiven && form.fleaTickInterval === '30 days') ? (
+              <small style={{ display: 'block', marginBottom: 4 }}>Auto-calculated from Date Given</small>
+            ) : null}
             <input
               type="date"
               value={form.dueDate}

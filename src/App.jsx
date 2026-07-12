@@ -24,6 +24,7 @@ import PasscodeGate from './components/PasscodeGate';
 import FeedbackModal from './components/FeedbackModal';
 import QuarantineCardGenerator from './pages/QuarantineCardGenerator';
 import { AdoptionRecords } from './pages/AdoptionRecords';
+import { KennelCardGenerator } from './pages/KennelCardGenerator';
 
 export default function App() {
   const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -300,6 +301,10 @@ export default function App() {
 
         {page === 'adoption-records' && (
           <AdoptionRecords setPage={setPage} />
+        )}
+
+        {page === 'kennel-card-generator' && (
+          <KennelCardGenerator setPage={setPage} />
         )}
 
         {page === 'text-alert' && <TextAlert />}

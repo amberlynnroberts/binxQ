@@ -34,35 +34,48 @@ export function More({ reload, dbStatus, setDbStatus, setPage }) {
         <p><b>Status:</b> {dbStatus}</p>
       </section>
 
-      <button
-        type="button"
-        className="actionCardButton"
-        onClick={() => setPage('vet-calendar')}>
-        Vet Calendar
-      </button>
+      <div className="syncButtonGrid">
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={() => setPage('vet-calendar')}>
+          Vet Calendar
+        </button>
 
-      <button 
-        onClick={() => setPage('adoption-records')}>
-        Adoption Records
-      </button>
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={() => setPage('adoption-records')}>
+          Adoption Records
+        </button>
 
-      <button
-        className="actionCardButton"
-        onClick={syncEverything}>
-        Sync Everything
-      </button>
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={syncEverything}>
+          Sync Everything
+        </button>
 
-      <button
-        className="actionCardButton"
-        onClick={() => setPage('reports')}>
-        Reports
-      </button>
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={() => setPage('reports')}>
+          Reports
+        </button>
 
-      <button
-        className="actionCardButton"
-        onClick={() => setPage('quarantine-card-generator')}>
-        📋 Quarantine Cards
-      </button>
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={() => setPage('kennel-card-generator')}>
+          Kennel Card Generator
+        </button>
+
+        {/* <button
+          className="actionCardButton"
+          onClick={() => setPage('quarantine-card-generator')}>
+          📋 Quarantine Cards
+        </button> */}
+      </div>
 
       {showSyncSuccess && (
         <div className="syncToast">

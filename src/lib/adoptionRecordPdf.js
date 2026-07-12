@@ -23,19 +23,93 @@ function formatEventDate(event) {
   return 'No date recorded';
 }
 
+function extractMicrochipId(microchipValue) {
+  if (!microchipValue) return 'Not recorded';
+
+  // Already a parsed object: { Id, Issuer, ImplantUnixTime }
+  if (typeof microchipValue === 'object') {
+    return microchipValue.Id || 'Not recorded';
+  }
+
+  // Stored as a JSON string (e.g. '{"Id":"941...","Issuer":"..."}') rather
+  // than an actual object — this is what was showing up raw and unparsed
+  // in the PDF. Try to parse it and pull out just the Id.
+  if (typeof microchipValue === 'string') {
+    const trimmed = microchipValue.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return parsed.Id || 'Not recorded';
+      } catch {
+        // Not valid JSON after all — fall through and just show the raw
+        // string rather than silently dropping it.
+        return trimmed;
+      }
+    }
+    return trimmed;
+  }
+
+  return 'Not recorded';
+}
+
+function formatAgeDisplay(ageInMonths) {
+  const months = Number(ageInMonths);
+  if (!ageInMonths || Number.isNaN(months) || months <= 0) return 'Unknown';
+
+  if (months < 12) {
+    return `${months} month${months === 1 ? '' : 's'}`;
+  }
+
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  const yearsStr = `${years} year${years === 1 ? '' : 's'}`;
+  if (remMonths === 0) return yearsStr;
+  return `${yearsStr}, ${remMonths} month${remMonths === 1 ? '' : 's'}`;
+}
+
+function formatPlainDate(dateString) {
+  if (!dateString) return null;
+  return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', { dateStyle: 'medium' });
+}
+
+function buildDetailLine(event) {
+  if (!event.date_given && !event.vaccine_duration && !event.flea_tick_interval) return null;
+
+  const givenStr = formatPlainDate(event.date_given);
+  const cadenceStr = event.vaccine_duration
+    ? `${event.vaccine_duration} duration`
+    : event.flea_tick_interval
+      ? (event.flea_tick_interval === 'other' ? 'custom interval' : `${event.flea_tick_interval} interval`)
+      : null;
+  const nextDueStr = formatPlainDate(event.due_date);
+
+  return [
+    givenStr ? `Given: ${givenStr}` : null,
+    cadenceStr,
+    nextDueStr ? `Next due: ${nextDueStr}` : null,
+  ].filter(Boolean).join('   •   ');
+}
+
+function wrappedLineCount(doc, text, maxWidth) {
+  if (!text) return 0;
+  return doc.splitTextToSize(text, maxWidth).length;
+}
+
 /**
- * @param {Object} animal - animal record (expects name, species, sex, age,
- *   desc/color, microchip_number, shelterluv_id)
- * @param {Array} vetEvents - full vet_events rows for this animal
+ * @param {Object} animal
+ * @param {Array} vetEvents
  * @param {Object} [options]
- * @param {string} [options.orgName] - shown in the header
+ * @param {string} [options.orgName]
  */
 export function generateAdoptionRecordPdf(animal, vetEvents = [], options = {}) {
-  const orgName = options.orgName || 'House of Black Cat Magic Animal Rescue';
+  const orgName = options.orgName || "Binx's Home for Black Cats";
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
 
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const marginX = 48;
+  const contentWidth = pageWidth - marginX * 2;
+  const pageBottom = pageHeight - 56;
   let y = 56;
 
   // --- Header ---
@@ -43,56 +117,75 @@ export function generateAdoptionRecordPdf(animal, vetEvents = [], options = {}) 
   doc.setFontSize(18);
   doc.text(orgName, marginX, y);
 
-  y += 22;
-  doc.setFontSize(14);
-  doc.setTextColor(90, 90, 90);
+  y += 20;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(13);
+  doc.setTextColor(100, 100, 100);
   doc.text('Veterinary Care Record', marginX, y);
   doc.setTextColor(0, 0, 0);
 
-  y += 10;
-  doc.setDrawColor(200, 200, 200);
+  y += 16;
+  doc.setDrawColor(210, 210, 210);
+  doc.setLineWidth(1);
   doc.line(marginX, y, pageWidth - marginX, y);
-  y += 26;
+  y += 32;
 
-  // --- Animal info block ---
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(animal?.name || 'Unknown', marginX, y);
-  y += 20;
+  // --- Animal info card ---
+  const infoBoxTop = y - 20;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-
-  const infoLines = [
-    [`Species:`, animal?.species || 'Cat'],
-    [`Sex:`, animal?.sex || 'Unknown'],
-    [`Age:`, animal?.age ? `${animal.age} months` : 'Unknown'],
-    [`Description:`, animal?.desc || animal?.color || '—'],
-    [`Microchip #:`, (typeof animal?.microchip_number === 'object'
-      ? animal?.microchip_number?.Id
-      : animal?.microchip_number) || 'Not recorded'],
-    [`Record ID:`, animal?.shelterluv_id || animal?.id || '—'],
+  const infoPairs = [
+    ['Species', animal?.species || 'Cat'],
+    ['Sex', animal?.sex || 'Unknown'],
+    ['Age', formatAgeDisplay(animal?.age)],
+    ['Description', animal?.desc || animal?.color || '—'],
+    ['Microchip #', extractMicrochipId(animal?.microchip_number)],
+    ['Record ID', animal?.shelterluv_id || animal?.id || '—'],
   ];
 
-  const colGap = 130;
-  for (const [label, value] of infoLines) {
-    doc.setFont('helvetica', 'bold');
-    doc.text(label, marginX, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(String(value), marginX + colGap, y);
-    y += 16;
-  }
+  const infoColWidth = (contentWidth - 32) / 2;
+  const infoRowHeight = 20;
+  const nameLineY = infoBoxTop + 26;
+  const infoStartY = nameLineY + 26;
 
-  y += 14;
+  const infoRows = Math.ceil(infoPairs.length / 2);
+  const boxBottom = infoStartY + infoRows * infoRowHeight - infoRowHeight + 14;
+
+  doc.setDrawColor(225, 225, 225);
+  doc.setFillColor(250, 250, 251);
+  doc.roundedRect(marginX, infoBoxTop, contentWidth, boxBottom - infoBoxTop, 8, 8, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(17);
+  doc.setTextColor(0, 0, 0);
+  doc.text(animal?.name || 'Unknown', marginX + 16, nameLineY);
+
+  doc.setFontSize(10.5);
+  infoPairs.forEach(([label, value], i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = marginX + 16 + col * (infoColWidth + 32);
+    const rowY = infoStartY + row * infoRowHeight;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(90, 90, 90);
+    doc.text(`${label}:`, x, rowY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(value), x + 78, rowY, { maxWidth: infoColWidth - 78 });
+  });
+
+  y = boxBottom + 34;
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
+  doc.setTextColor(0, 0, 0);
   doc.text('Veterinary History', marginX, y);
   y += 8;
-  doc.setDrawColor(200, 200, 200);
+  doc.setDrawColor(210, 210, 210);
   doc.line(marginX, y, pageWidth - marginX, y);
-  y += 20;
+  y += 24;
 
-  // --- Vet events table ---
+  // --- Vet events, one clearly separated card per event ---
   const sorted = [...vetEvents].sort((a, b) => {
     const aDate = a.appointment_at || a.due_date || '';
     const bDate = b.appointment_at || b.due_date || '';
@@ -105,64 +198,114 @@ export function generateAdoptionRecordPdf(animal, vetEvents = [], options = {}) 
     doc.setTextColor(120, 120, 120);
     doc.text('No veterinary events recorded.', marginX, y);
   } else {
-    const colWidths = { date: 130, type: 90, name: 150, vet: 100 };
-    const rowHeight = 18;
-    const pageBottom = doc.internal.pageSize.getHeight() - 60;
-
-    // Table header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(marginX, y - 12, pageWidth - marginX * 2, 18, 'F');
-    doc.text('Date', marginX + 4, y);
-    doc.text('Type', marginX + colWidths.date, y);
-    doc.text('Event', marginX + colWidths.date + colWidths.type, y);
-    doc.text('Veterinarian / Location', marginX + colWidths.date + colWidths.type + colWidths.name, y);
-    y += rowHeight;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
+    const padX = 14;
+    const padTop = 14;
+    const lineGap = 15;
+    const cardGap = 12;
+    const innerWidth = contentWidth - padX * 2;
 
     for (const event of sorted) {
-      if (y > pageBottom) {
+      const dateStr = formatEventDate(event);
+      const typeStr = (event.event_type || '—').toUpperCase();
+      const nameStr = event.event_name || '—';
+      const vetLocStr = [event.veterinarian, event.location].filter(Boolean).join('  ·  ');
+      const detailStr = buildDetailLine(event);
+      const noteStr = event.notes ? `Note: ${event.notes}` : null;
+      const statusStr = event.completed ? 'Completed' : null;
+
+      const nameLines = wrappedLineCount(doc, nameStr, innerWidth - 90);
+      const vetLocLines = vetLocStr ? wrappedLineCount(doc, vetLocStr, innerWidth) : 0;
+      const detailLines = detailStr ? wrappedLineCount(doc, detailStr, innerWidth) : 0;
+      const noteLines = noteStr ? wrappedLineCount(doc, noteStr, innerWidth) : 0;
+
+      const totalLines = Math.max(nameLines, 1) + vetLocLines + detailLines + noteLines;
+      const cardHeight = padTop + (totalLines * lineGap) + 10;
+
+      if (y + cardHeight > pageBottom) {
         doc.addPage();
         y = 56;
       }
 
-      const dateStr = formatEventDate(event);
-      const typeStr = event.event_type || '—';
-      const nameStr = event.event_name || '—';
-      const vetLocStr = [event.veterinarian, event.location].filter(Boolean).join(' · ') || '—';
-      const statusStr = event.completed ? ' (Completed)' : '';
+      const cardTop = y;
 
-      doc.text(dateStr, marginX + 4, y, { maxWidth: colWidths.date - 6 });
-      doc.text(typeStr, marginX + colWidths.date, y, { maxWidth: colWidths.type - 6 });
-      doc.text(`${nameStr}${statusStr}`, marginX + colWidths.date + colWidths.type, y, { maxWidth: colWidths.name - 6 });
-      doc.text(vetLocStr, marginX + colWidths.date + colWidths.type + colWidths.name, y, { maxWidth: colWidths.vet - 6 });
+      doc.setFillColor(252, 252, 253);
+      doc.setDrawColor(228, 228, 230);
+      doc.roundedRect(marginX, cardTop, contentWidth, cardHeight, 6, 6, 'FD');
 
-      y += rowHeight;
+      doc.setFillColor(event.completed ? 150 : 120, event.completed ? 190 : 140, event.completed ? 150 : 220);
+      doc.rect(marginX, cardTop, 4, cardHeight, 'F');
 
-      if (event.notes) {
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(110, 110, 110);
-        doc.text(`Note: ${event.notes}`, marginX + 4, y, { maxWidth: pageWidth - marginX * 2 - 8 });
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
-        y += rowHeight;
+      let cy = cardTop + padTop;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(30, 30, 30);
+      doc.text(dateStr, marginX + padX, cy);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(120, 120, 130);
+      doc.text(typeStr, marginX + contentWidth - padX, cy, { align: 'right' });
+
+      cy += lineGap;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text(nameStr, marginX + padX, cy, { maxWidth: innerWidth - 90 });
+
+      if (statusStr) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(60, 150, 90);
+        doc.text(statusStr, marginX + contentWidth - padX, cy, { align: 'right' });
       }
+
+      cy += lineGap * Math.max(nameLines, 1);
+
+      if (vetLocStr) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text(vetLocStr, marginX + padX, cy, { maxWidth: innerWidth });
+        cy += lineGap * vetLocLines;
+      }
+
+      if (detailStr) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(70, 90, 140);
+        doc.text(detailStr, marginX + padX, cy, { maxWidth: innerWidth });
+        cy += lineGap * detailLines;
+      }
+
+      if (noteStr) {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        doc.text(noteStr, marginX + padX, cy, { maxWidth: innerWidth });
+      }
+
+      doc.setTextColor(0, 0, 0);
+      y = cardTop + cardHeight + cardGap;
     }
   }
 
-  // --- Footer ---
-  const footerY = doc.internal.pageSize.getHeight() - 36;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(140, 140, 140);
-  doc.text(
-    `Generated ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })} — ${orgName}`,
-    marginX,
-    footerY
-  );
+  // --- Footer (every page) ---
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    const footerY = pageHeight - 32;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      `Generated ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })} — ${orgName}`,
+      marginX,
+      footerY
+    );
+    doc.text(`Page ${p} of ${pageCount}`, pageWidth - marginX, footerY, { align: 'right' });
+  }
 
   const safeName = (animal?.name || 'animal').replace(/[^a-z0-9]+/gi, '_');
   doc.save(`${safeName}_veterinary_record.pdf`);

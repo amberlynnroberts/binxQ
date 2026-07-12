@@ -4,6 +4,8 @@ export const vetEventTypes = [
   'Vaccine',
   'Booster',
   'Rabies',
+  'Flea/Tick Preventative',
+  'Dewormer',
   'Spay/Neuter',
   'Vet Appointment',
   'Follow Up',
@@ -12,6 +14,44 @@ export const vetEventTypes = [
   'Dental',
   'Other'
 ];
+
+// Adds whole years/days to a plain "YYYY-MM-DD" date string, using explicit
+// local-time parsing (T00:00:00) to avoid the UTC-vs-local off-by-one-day
+// bug we already fixed elsewhere in this codebase (medUtils.js, vet
+// appointment times). Returns a "YYYY-MM-DD" string.
+export function addYearsToDateString(dateString, years) {
+  if (!dateString) return null;
+  const d = new Date(`${dateString}T00:00:00`);
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().slice(0, 10);
+}
+
+export function addDaysToDateString(dateString, days) {
+  if (!dateString) return null;
+  const d = new Date(`${dateString}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// Given a date-given string and either a Rabies vaccine_duration
+// ('1 year' / '3 year') or a Flea/Tick flea_tick_interval
+// ('30 days' / 'other'), returns the auto-calculated next-due date string,
+// or null if it can't be auto-calculated (e.g. flea/tick 'other' — that
+// case is always manual entry).
+export function calculateNextDueDate({ dateGiven, eventType, vaccineDuration, fleaTickInterval }) {
+  if (!dateGiven) return null;
+
+  if (eventType === 'Rabies' && vaccineDuration) {
+    if (vaccineDuration === '1 year') return addYearsToDateString(dateGiven, 1);
+    if (vaccineDuration === '3 year') return addYearsToDateString(dateGiven, 3);
+  }
+
+  if (eventType === 'Flea/Tick Preventative' && fleaTickInterval === '30 days') {
+    return addDaysToDateString(dateGiven, 30);
+  }
+
+  return null;
+}
 
 export function todayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -111,7 +151,10 @@ export async function addVetEvent({
   appointmentAt = null,
   location = '',
   veterinarian = '',
-  notes = ''
+  notes = '',
+  dateGiven = null,
+  vaccineDuration = null,
+  fleaTickInterval = null
 }) {
   if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
   if (!animalId) throw new Error('Animal is required');
@@ -128,20 +171,13 @@ export async function addVetEvent({
       event_type: eventType,
       event_name: eventName.trim(),
       due_date: dueDate || null,
-      // FIXED: appointmentAt comes from a <input type="datetime-local">,
-      // which gives a naive string like "2026-07-04T14:00" with NO timezone
-      // marker. Sending that straight to Postgres caused it to be stored
-      // as if it were UTC — so a staff member picking 2:00 PM Eastern was
-      // actually saved as 2:00 PM UTC (10:00 AM Eastern during EDT), a
-      // 4-hour error. `new Date(...)` correctly parses a timezone-less
-      // string as the browser's LOCAL time, so calling .toISOString() here
-      // converts it to the correct UTC instant before it's saved. This
-      // assumes the device entering the appointment is set to Eastern time,
-      // which holds for on-site HBCM staff.
       appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,
       location: location || null,
       veterinarian: veterinarian || null,
-      notes: notes || null
+      notes: notes || null,
+      date_given: dateGiven || null,
+      vaccine_duration: vaccineDuration || null,
+      flea_tick_interval: fleaTickInterval || null
     })
     .select()
     .single();
@@ -158,7 +194,10 @@ export async function updateVetEvent({
   appointmentAt = null,
   location = '',
   veterinarian = '',
-  notes = ''
+  notes = '',
+  dateGiven = null,
+  vaccineDuration = null,
+  fleaTickInterval = null
 }) {
   if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
   if (!eventId) throw new Error('Event ID is required');
@@ -174,14 +213,13 @@ export async function updateVetEvent({
       event_type: eventType,
       event_name: eventName.trim(),
       due_date: dueDate || null,
-      // Same fix as addVetEvent: a <input type="datetime-local"> gives a
-      // naive local-time string with no timezone marker. new Date(...)
-      // correctly parses that as the browser's local time, and
-      // .toISOString() converts it to the correct UTC instant for storage.
       appointment_at: appointmentAt ? new Date(appointmentAt).toISOString() : null,
       location: location || null,
       veterinarian: veterinarian || null,
-      notes: notes || null
+      notes: notes || null,
+      date_given: dateGiven || null,
+      vaccine_duration: vaccineDuration || null,
+      flea_tick_interval: fleaTickInterval || null
     })
     .eq('id', eventId)
     .select()
