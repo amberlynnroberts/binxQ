@@ -3019,44 +3019,31 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
     display: none !important;
   }
 
-  /* NOTE: margin: 0 here is unreliable — most browsers silently enforce
-     their own minimum print margin regardless of what @page requests,
-     which can push a card sized to exactly half the page past the
-     printable area and spill onto a second sheet. Using a small explicit
-     margin instead avoids that, at the cost of the card not being
-     perfectly full-bleed to the paper edge. */
   @page {
     size: letter portrait;
-    margin: 0.2in;
+    margin: 0.3in;
   }
 }
 
-/* Sized to safely fit within the top half of a standard 8.5x11 page even
-   after the browser's own minimum print margin is applied — see note
-   above. If your printer/browser combination allows tighter margins, this
-   can be sized up slightly, but this is deliberately a bit conservative to
-   avoid overflowing onto a second page. */
 .kennelCardSheet {
-  width: 8.1in;
-  height: 5in;
-  margin: 0;
-  padding: 0.25in;
-  border-bottom: 2px dashed #000;
+  width: 5in;
+  margin: 0 auto;
+  padding: 0.4in;
+  border: 3px solid #000;
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
   color: #000;
   background: #fff;
-  display: flex;
-  gap: 0.2in;
 }
 
 .kennelCardPhotoWrap {
-  flex: 0 0 2.3in;
-  height: 4.3in;
+  width: 100%;
+  height: 2.6in;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  margin-bottom: 14px;
   border: 1px solid #999;
   background: #f4f4f4;
 }
@@ -3068,76 +3055,67 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   display: block;
 }
 
-.kennelCardMain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 .kennelCardName {
-  font-size: 30px;
-  text-align: left;
-  margin: 0 0 6px;
+  font-size: 44px;
+  text-align: center;
+  margin: 0 0 10px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  line-height: 1.05;
 }
 
 .kennelCardKennelBadge {
-  display: inline-block;
-  font-size: 16px;
+  text-align: center;
+  font-size: 26px;
   font-weight: 900;
   background: #000;
   color: #fff;
-  padding: 4px 10px;
-  margin-bottom: 9px;
+  padding: 8px;
+  margin-bottom: 18px;
   border-radius: 4px;
-  width: fit-content;
 }
 
 .kennelCardGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  margin-bottom: 5px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .kennelCardGrid div {
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 3px 6px;
+  padding: 8px 10px;
 }
 
 .kennelCardGrid b {
   display: block;
-  font-size: 9px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #555;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .kennelCardGrid span {
-  font-size: 13px;
+  font-size: 21px;
   font-weight: 700;
 }
 
 .kennelCardRow {
   border-top: 1px solid #ccc;
-  padding: 3px 0;
+  padding: 12px 0;
 }
 
 .kennelCardRow b {
   display: block;
-  font-size: 9px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #555;
-  margin-bottom: 1px;
+  margin-bottom: 3px;
 }
 
 .kennelCardRow span {
-  font-size: 11px;
-  line-height: 1.15;
+  font-size: 19px;
+  line-height: 1.35;
 }
