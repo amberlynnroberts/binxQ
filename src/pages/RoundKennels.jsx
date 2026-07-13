@@ -171,17 +171,23 @@ export function RoundKennels({
   }
 
   function getProgressForCats(cats) {
+    // Cats with no kennel number assigned ('?') are excluded from the
+    // percentage math specifically — they still show up in the card list
+    // itself, just don't count toward "X of Y complete" since they aren't
+    // tied to a trackable room/kennel for cleaning purposes yet.
+    const countedCats = cats.filter(cat => cat.kennel && cat.kennel !== '?');
+
     if (roundType === 'med') {
       const medCatsDone = new Set();
-      for (const cat of cats) {
+      for (const cat of countedCats) {
         const activeMeds = medByAnimal.get(cat.id) || [];
         if (activeMeds.length > 0 && activeMeds.every(med => completedMedKeys.has(`${cat.id}:${med.id}`))) {
           medCatsDone.add(cat.id);
         }
       }
-      return getKennelProgress({ cats, completedAnimalIds: medCatsDone });
+      return getKennelProgress({ cats: countedCats, completedAnimalIds: medCatsDone });
     }
-    return getKennelProgress({ cats, completedAnimalIds: completedCareIds });
+    return getKennelProgress({ cats: countedCats, completedAnimalIds: completedCareIds });
   }
 
   const title = roundType === 'med' ? 'Medication Round' : `${shift} Care Round`;
@@ -309,7 +315,7 @@ export function RoundKennels({
               </section>
             )
           ) : (
-            kennelGroups.filter(({ cats }) => cats.length > 0).map(({ kennel, cats }) => {
+            kennelGroups.filter(({ kennel, cats }) => cats.length > 0 && kennel !== '?').map(({ kennel, cats }) => {
               const progress = getProgressForCats(cats);
               return (
                 <section className="roundKennelSection" key={kennel}>

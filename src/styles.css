@@ -3027,6 +3027,7 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 
 .kennelCardSheet {
   width: 5in;
+  min-height: 8in;
   margin: 0 auto;
   padding: 0.4in;
   border: 3px solid #000;
@@ -3049,10 +3050,9 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 }
 
 .kennelCardPhoto {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
 }
 
 .kennelCardName {
@@ -3119,3 +3119,244 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   font-size: 19px;
   line-height: 1.35;
 }
+
+/* === Kennel Card Generator print styles === */
+
+.kennelCardPrintArea {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .kennelCardPrintArea,
+  .kennelCardPrintArea * {
+    visibility: visible;
+  }
+
+  .kennelCardPrintArea {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .noPrint {
+    display: none !important;
+  }
+
+  /* No fixed size/orientation here on purpose — @page can't reliably
+     switch based on which CSS class is applied to content, since it's a
+     print-job-level setting rather than scoped to an element. Select
+     "4x6" (or your closest paper size) and match the Portrait/Landscape
+     toggle below in your browser's print dialog instead. */
+  @page {
+    margin: 0.12in;
+  }
+}
+
+/* ---- Shared base ---- */
+.kennelCardSheet {
+  margin: 0 auto;
+  padding: 0.14in;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+  background: #fff;
+  display: flex;
+}
+
+.kennelCardPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center top;
+  display: block;
+}
+
+.kennelCardSubInfo {
+  font-size: 7px;
+  color: #666;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.kennelCardKennelBadge {
+  font-weight: 900;
+  background: #000;
+  color: #fff;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.kennelCardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+}
+
+.kennelCardGrid div {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.kennelCardGrid b {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #555;
+  margin-bottom: 0;
+}
+
+.kennelCardGrid span {
+  font-weight: 700;
+}
+
+.kennelCardRow {
+  border-top: 1px solid #ccc;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+
+.kennelCardRow b {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #555;
+  margin-bottom: 0;
+}
+
+.kennelCardNotesRow {
+  border-top: 1px solid #ccc;
+  padding: 4px 0;
+  margin-top: 2px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.kennelCardNotesRow b {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #555;
+  margin-bottom: 3px;
+  flex-shrink: 0;
+}
+
+.kennelCardNotesRow span {
+  display: block;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ---- Portrait: 4in wide x 6in tall, stacked layout ---- */
+.kennelCardSheet.portrait {
+  width: 3.76in;
+  height: 5.76in;
+  flex-direction: column;
+}
+
+.kennelCardSheet.portrait .kennelCardPhotoWrap {
+  width: 100%;
+  height: 1.3in;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 5px;
+  border: 1px solid #999;
+  background: #f4f4f4;
+}
+
+.kennelCardSheet.portrait .kennelCardName {
+  font-size: 20px;
+  text-align: center;
+  margin: 0 0 1px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.kennelCardSheet.portrait .kennelCardSubInfo {
+  text-align: center;
+}
+
+.kennelCardSheet.portrait .kennelCardKennelBadge {
+  text-align: center;
+  font-size: 13px;
+  padding: 3px;
+  margin-bottom: 5px;
+}
+
+.kennelCardSheet.portrait .kennelCardGrid b { font-size: 6.5px; }
+.kennelCardSheet.portrait .kennelCardGrid span { font-size: 9.5px; }
+.kennelCardSheet.portrait .kennelCardRow b { font-size: 6.5px; }
+.kennelCardSheet.portrait .kennelCardRow span { font-size: 8.5px; line-height: 1.2; }
+.kennelCardSheet.portrait .kennelCardNotesRow b { font-size: 8px; }
+.kennelCardSheet.portrait .kennelCardNotesRow span { font-size: 10px; }
+
+/* ---- Landscape: 6in wide x 4in tall, photo left / info right ---- */
+.kennelCardSheet.landscape {
+  width: 5.76in;
+  height: 3.76in;
+  flex-direction: row;
+  gap: 0.14in;
+}
+
+.kennelCardSheet.landscape .kennelCardPhotoWrap {
+  flex: 0 0 1.7in;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #999;
+  background: #f4f4f4;
+}
+
+.kennelCardSheet.landscape .kennelCardMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kennelCardSheet.landscape .kennelCardName {
+  font-size: 18px;
+  text-align: left;
+  margin: 0 0 1px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+.kennelCardSheet.landscape .kennelCardSubInfo {
+  text-align: left;
+}
+
+.kennelCardSheet.landscape .kennelCardKennelBadge {
+  display: inline-block;
+  text-align: center;
+  font-size: 12px;
+  padding: 2px 7px;
+  margin-bottom: 4px;
+  width: fit-content;
+}
+
+.kennelCardSheet.landscape .kennelCardGrid b { font-size: 6px; }
+.kennelCardSheet.landscape .kennelCardGrid span { font-size: 8.5px; }
+.kennelCardSheet.landscape .kennelCardRow b { font-size: 6px; }
+.kennelCardSheet.landscape .kennelCardRow span { font-size: 7.5px; line-height: 1.15; }
+.kennelCardSheet.landscape .kennelCardNotesRow b { font-size: 7px; }
+.kennelCardSheet.landscape .kennelCardNotesRow span { font-size: 9px; }

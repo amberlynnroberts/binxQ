@@ -133,7 +133,38 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
         sex: s?.sex || 'Unknown',
         age: s?.age || '',
         neutered_spayed: s?.neutered_spayed || '',
-        microchip_number: typeof s?.microchip_number === 'object' ? s?.microchip_number?.Id || '' : s?.microchip_number || '',
+        // FIXED: 'neutered_spayed' above isn't a real column on
+        // shelterluv_animals — the actual altered/fixed status lives in
+        // the 'altered' boolean column, which was never being exposed on
+        // the returned animal object at all. Anything reading
+        // animal.altered (e.g. the Kennel Card's Spayed/Neutered field)
+        // was always getting undefined, hence always showing "Unknown"
+        // regardless of the real value.
+        altered: s?.altered ?? null,
+        primary_breed: s?.primary_breed || null,
+        // FIXED: microchip_number is sometimes stored as a JSON STRING
+        // (e.g. '{"Id":"941010002644027","Issuer":"...",...}'), not an
+        // actual parsed object — the old `typeof === 'object'` check never
+        // matched that case, so it fell through to returning the whole raw
+        // unparsed string. This now also tries to parse a string that
+        // looks like JSON and pulls out just the Id either way.
+        microchip_number: (() => {
+          const raw = s?.microchip_number;
+          if (!raw) return '';
+          if (typeof raw === 'object') return raw.Id || '';
+          if (typeof raw === 'string') {
+            const trimmed = raw.trim();
+            if (trimmed.startsWith('{')) {
+              try {
+                return JSON.parse(trimmed).Id || '';
+              } catch {
+                return trimmed;
+              }
+            }
+            return trimmed;
+          }
+          return '';
+        })(),
         status: appStatus,
         local_status: row.local_status || '',
         shelterluv_status: shelterluvStatus,

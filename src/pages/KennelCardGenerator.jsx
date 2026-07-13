@@ -11,9 +11,11 @@ export function KennelCardGenerator({ setPage }) {
   const [selectedId, setSelectedId] = useState('');
   const [foodOptions, setFoodOptions] = useState({ Adult: false, Kitten: false, Wet: false, Dry: false });
   const [foodOther, setFoodOther] = useState('');
+  const [additives, setAdditives] = useState('');
   const [notes, setNotes] = useState('');
   const [kennelOverride, setKennelOverride] = useState('');
   const [includePhoto, setIncludePhoto] = useState(true);
+  const [orientation, setOrientation] = useState('portrait');
 
   useEffect(() => {
     fetchKennelCheckData({ includeRemoved: true })
@@ -124,6 +126,15 @@ export function KennelCardGenerator({ setPage }) {
             </label>
 
             <label className="wide">
+              Additives
+              <input
+                value={additives}
+                onChange={e => setAdditives(e.target.value)}
+                placeholder="e.g. probiotic powder, fish oil, wet food topper"
+              />
+            </label>
+
+            <label className="wide">
               Notes
               <textarea
                 rows="3"
@@ -146,6 +157,31 @@ export function KennelCardGenerator({ setPage }) {
               Include photo on card
             </label>
 
+            <div className="wide" style={{ display: 'grid', gap: 7 }}>
+              <span style={{ fontWeight: 700, color: 'var(--round-text)' }}>Card Orientation</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  className={orientation === 'portrait' ? 'roundPrimary' : 'roundSecondary'}
+                  onClick={() => setOrientation('portrait')}
+                  style={{ flex: 1 }}
+                >
+                  Portrait (4in x 6in)
+                </button>
+                <button
+                  type="button"
+                  className={orientation === 'landscape' ? 'roundPrimary' : 'roundSecondary'}
+                  onClick={() => setOrientation('landscape')}
+                  style={{ flex: 1 }}
+                >
+                  Landscape (6in x 4in)
+                </button>
+              </div>
+              <small style={{ color: 'var(--round-muted)' }}>
+                Match this to the Portrait/Landscape option in your printer's dialog when you print.
+              </small>
+            </div>
+
             <button type="button" className="roundPrimary wide" onClick={handlePrint}>
               <Printer size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
               Print Kennel Card
@@ -157,53 +193,67 @@ export function KennelCardGenerator({ setPage }) {
       {/* This block is hidden on screen (see .kennelCardPrintArea CSS) and
           only rendered visibly by the browser's print stylesheet, so the
           on-screen form above doesn't get printed along with it. */}
-      {animal && (
-        <div className="kennelCardPrintArea">
-          <div className="kennelCardSheet">
-            {includePhoto && (
-              <div className="kennelCardPhotoWrap">
-                <img src={photoUrl} alt={animal.name} className="kennelCardPhoto" />
+      {animal && (() => {
+        const cardContent = (
+          <>
+            <h1 className="kennelCardName">{animal.name}</h1>
+
+            <div className="kennelCardSubInfo">
+              {[animal.primary_breed, animal.desc].filter(Boolean).join(', ') || '—'}
+              {animal.microchip_number ? ` • Chip: ${animal.microchip_number}` : ''}
+            </div>
+
+            <div className="kennelCardKennelBadge">Kennel {kennelOverride || '—'}</div>
+
+            {animal.medications && animal.medications.length > 0 && (
+              <div className="kennelCardRow" style={{ borderTop: 'none', marginBottom: 8 }}>
+                <b>Medications</b>
+                <span>
+                  {animal.medications.map(m => `${m.name}${m.dose ? ` (${m.dose})` : ''}${m.schedule ? ` – ${m.schedule}` : ''}`).join('; ')}
+                </span>
               </div>
             )}
 
-            <div className="kennelCardMain">
-              <h1 className="kennelCardName">{animal.name}</h1>
-              <div className="kennelCardKennelBadge">Kennel {kennelOverride || '—'}</div>
+            <div className="kennelCardGrid">
+              <div><b>Age</b><span>{formatAge(animal.age)}</span></div>
+              <div><b>Sex</b><span>{animal.sex || 'Unknown'}</span></div>
+              <div><b>Intake Date</b><span>{animal.intake || '—'}</span></div>
+              <div><b>Spayed/Neutered</b><span>{alteredText}</span></div>
+            </div>
 
-              <div className="kennelCardGrid">
-                <div><b>Age</b><span>{formatAge(animal.age)}</span></div>
-                <div><b>Sex</b><span>{animal.sex || 'Unknown'}</span></div>
-                <div><b>Intake Date</b><span>{animal.intake || '—'}</span></div>
-                <div><b>Spayed/Neutered</b><span>{alteredText}</span></div>
-              </div>
+            <div className="kennelCardRow">
+              <b>Food Type</b>
+              <span>{foodTypeDisplay}</span>
+            </div>
 
-              <div className="kennelCardRow">
-                <b>Description</b>
-                <span>{animal.desc || '—'}</span>
-              </div>
+            <div className="kennelCardRow">
+              <b>Additives</b>
+              <span>{additives || '—'}</span>
+            </div>
 
-              <div className="kennelCardRow">
-                <b>Food Type</b>
-                <span>{foodTypeDisplay}</span>
-              </div>
+            <div className="kennelCardNotesRow">
+              <b>Notes</b>
+              <span>{notes || '—'}</span>
+            </div>
+          </>
+        );
 
-              {animal.medications && animal.medications.length > 0 && (
-                <div className="kennelCardRow">
-                  <b>Medications</b>
-                  <span>
-                    {animal.medications.map(m => `${m.name}${m.dose ? ` (${m.dose})` : ''}${m.schedule ? ` – ${m.schedule}` : ''}`).join('; ')}
-                  </span>
+        return (
+          <div className="kennelCardPrintArea">
+            <div className={`kennelCardSheet ${orientation}`}>
+              {includePhoto && (
+                <div className="kennelCardPhotoWrap">
+                  <img src={photoUrl} alt={animal.name} className="kennelCardPhoto" />
                 </div>
               )}
 
-              <div className="kennelCardRow">
-                <b>Notes</b>
-                <span>{notes || '—'}</span>
-              </div>
+              {orientation === 'landscape'
+                ? <div className="kennelCardMain">{cardContent}</div>
+                : cardContent}
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </main>
   );
 }

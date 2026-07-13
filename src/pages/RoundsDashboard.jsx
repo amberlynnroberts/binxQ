@@ -117,8 +117,14 @@ export function RoundsDashboard({ data, setPage, startRound }) {
   }, []);
 
   const careTasks = useMemo(() => {
+    // Cats with no kennel number assigned ('?') are excluded from the
+    // AM/PM percentage math here, matching the same exclusion already
+    // applied on the Kennel board page (RoundKennels.jsx) — they aren't
+    // tied to a trackable room for cleaning purposes yet, so they
+    // shouldn't count toward "X% complete" here either.
+    const trackedAnimals = animals.filter(a => a.kennel && a.kennel !== '?');
     return getMissingCleaningTasks({
-      animals,
+      animals: trackedAnimals,
       cleaningSignoffs,
       hour: currentHour()
     });
@@ -126,13 +132,19 @@ export function RoundsDashboard({ data, setPage, startRound }) {
 
   const greeting = getGreeting();
   const nowHour = new Date().getHours();
-  const totalCats = animals.length || 0;
+  const totalCats = animals.filter(a => a.kennel && a.kennel !== '?').length || 0;
 
   const amRemaining = careTasks.filter(t => t.shift === 'AM').length;
   const pmRemaining = careTasks.filter(t => t.shift === 'PM').length;
 
   const amUnlocked = nowHour >= 8;
-  const pmUnlocked = nowHour >= 14;
+  // FIXED: previously nowHour >= 14 (2PM), but careTaskRules.js's
+  // PM_CLEANING_DUE_HOUR is 15 (3PM) — the threshold that actually
+  // decides whether a PM task counts as "due"/"missing". Between 2-3PM,
+  // this tile was unlocking and computing a percentage before any PM
+  // task was even considered due yet, so pmRemaining was always 0 in
+  // that window — producing a false 100% instead of "Not yet available".
+  const pmUnlocked = nowHour >= 15;
 
   const amComplete = amUnlocked && careTasks.filter(t => t.shift === 'AM').length > 0 && amRemaining === 0;
   const pmComplete = pmUnlocked && careTasks.filter(t => t.shift === 'PM').length > 0 && pmRemaining === 0;
