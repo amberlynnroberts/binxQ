@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {CheckCircle2, ClipboardCheck, Moon, Pill, RefreshCw, Sun, Trash2, Sparkles} from 'lucide-react';
+import {CheckCircle2, ClipboardCheck, Moon, Pill, RefreshCw, Sun, Trash2, Sparkles, X} from 'lucide-react';
 import {fetchDailyCareSignoffs, removeCleaningSignoff, removeMedicationSignoff, signOffCleaning, signOffMedication, todayDateString} from '../lib/dailyCareApi';
 import { ArrowLeft } from 'lucide-react';
 import { medNeededForShift } from '../lib/medUtils';
@@ -16,6 +16,14 @@ export function DailyCare({ data, reload }) {
   const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
   const [message, setMessage] = useState('');
   const [busyKey, setBusyKey] = useState('');
+
+  // Modal state for entering initials, replacing the old window.prompt —
+  // this is a proper in-app dialog styled to match the rest of BinxQ,
+  // instead of a plain native browser popup.
+  const [showInitialsModal, setShowInitialsModal] = useState(false);
+  const [modalInitials, setModalInitials] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
 
   const animals = data?.animals || [];
   const meds = data?.meds || [];
@@ -64,70 +72,89 @@ export function DailyCare({ data, reload }) {
     loadSignoffs().catch(console.error);
   }, [careDate, shift]);
 
-  // Prompts directly for a name/initials if none is already set, rather than
-  // silently blocking the click and relying on a message elsewhere on the
-  // page (which may not be visible depending on scroll position/layout).
-  // Returns the name to use, or null if the person cancelled.
-  function getSignedByOrPrompt() {
+  // If initials are already set, runs the action immediately with that
+  // name. Otherwise opens the initials modal and stashes the action to run
+  // once the person confirms — this replaces the old window.prompt-based
+  // flow with a proper styled in-app dialog.
+  function requestInitialsThen(action) {
     const existing = signedBy.trim();
-    if (existing) return existing;
+    if (existing) {
+      action(existing);
+      return;
+    }
+    setModalInitials('');
+    setModalError('');
+    setPendingAction(() => action);
+    setShowInitialsModal(true);
+  }
 
-    const entered = window.prompt('Enter your name or initials:');
-    if (!entered || !entered.trim()) return null;
+  function confirmInitialsModal() {
+    const upper = modalInitials.trim().toUpperCase();
+    if (!upper) {
+      setModalError('Please enter your initials.');
+      return;
+    }
+    setSignedBy(upper);
+    setShowInitialsModal(false);
+    setModalError('');
+    const action = pendingAction;
+    setPendingAction(null);
+    action?.(upper);
+  }
 
-    setSignedBy(entered.trim());
-    return entered.trim();
+  function cancelInitialsModal() {
+    setShowInitialsModal(false);
+    setPendingAction(null);
+    setModalError('');
   }
 
   async function toggleCleaning(animal) {
-    const name = getSignedByOrPrompt();
-    if (!name) return;
+    requestInitialsThen(async (name) => {
+      const key = `cleaning:${animal.id}`;
+      const alreadySigned = cleaningMap.has(animal.id);
 
-    const key = `cleaning:${animal.id}`;
-    const alreadySigned = cleaningMap.has(animal.id);
+      try {
+        setBusyKey(key);
 
-    try {
-      setBusyKey(key);
+        if (alreadySigned) {
+          await removeCleaningSignoff({ animalId: animal.id, shift, careDate });
+          showMessage(`${animal.name} cleaning sign-off removed.`);
+        } else {
+          await signOffCleaning({ animalId: animal.id, shift, careDate, signedBy: name, notes: notesByKey[key] || '' });
+          showMessage(`${animal.name} ${shift} cleaning signed off.`);
+        }
 
-      if (alreadySigned) {
-        await removeCleaningSignoff({ animalId: animal.id, shift, careDate });
-        showMessage(`${animal.name} cleaning sign-off removed.`);
-      } else {
-        await signOffCleaning({ animalId: animal.id, shift, careDate, signedBy: name, notes: notesByKey[key] || '' });
-        showMessage(`${animal.name} ${shift} cleaning signed off.`);
+        await loadSignoffs();
+        await reload?.();
+      } finally {
+        setBusyKey('');
       }
-
-      await loadSignoffs();
-      await reload?.();
-    } finally {
-      setBusyKey('');
-    }
+    });
   }
 
   async function toggleMed(animal, med) {
-    const name = getSignedByOrPrompt();
-    if (!name) return;
+    requestInitialsThen(async (name) => {
+      const key = `med:${animal.id}:${med.id}`;
+      const mapKey = `${animal.id}:${med.id}`;
+      const alreadySigned = medMap.has(mapKey);
 
-    const key = `med:${animal.id}:${med.id}`;
-    const mapKey = `${animal.id}:${med.id}`;
-    const alreadySigned = medMap.has(mapKey);
+      try {
+        setBusyKey(key);
 
-    try {
-      setBusyKey(key);
+        if (alreadySigned) {
+          await removeMedicationSignoff({ animalId: animal.id, medicationId: med.id, shift, careDate });
+          showMessage(`${animal.name} medication sign-off removed.`);
+        } else {
+          await signOffMedication({ animalId: animal.id, medicationId: med.id, shift, careDate, givenBy: name, notes: notesByKey[key] || '' });
+          showMessage(`${animal.name} ${med.name} marked given.`);
+        }
 
-      if (alreadySigned) {
-        await removeMedicationSignoff({ animalId: animal.id, medicationId: med.id, shift, careDate });
-        showMessage(`${animal.name} medication sign-off removed.`);
-      } else {
-        await signOffMedication({ animalId: animal.id, medicationId: med.id, shift, careDate, givenBy: name, notes: notesByKey[key] || '' });
-        showMessage(`${animal.name} ${med.name} marked given.`);
+        await loadSignoffs();
+        await reload?.();
+      } finally {
+        setBusyKey('');
       }
-
-      await loadSignoffs();
-      await reload?.();
-    } finally {
-      setBusyKey('');
-    }
+    });
   }
 
   function noteValue(key) {
@@ -169,7 +196,7 @@ export function DailyCare({ data, reload }) {
         </label>
 
         <label>Your Name / Initials
-          <input value={signedBy} onChange={e => setSignedBy(e.target.value)} placeholder="AR" />
+          <input value={signedBy} onChange={e => setSignedBy(e.target.value.toUpperCase())} placeholder="AR" />
         </label>
 
         {message && (
@@ -277,6 +304,43 @@ export function DailyCare({ data, reload }) {
           })}
         </div>
       </section>
+
+      {showInitialsModal && (
+        <div className="initialsModalOverlay" onClick={cancelInitialsModal}>
+          <div className="initialsModalCard" onClick={e => e.stopPropagation()}>
+            <div className="initialsModalHeader">
+              <div className="initialsModalIcon">
+                <CheckCircle2 size={22}/>
+              </div>
+              <button
+                type="button"
+                className="initialsModalClose"
+                onClick={cancelInitialsModal}
+              >
+                <X size={18}/>
+              </button>
+            </div>
+
+            <h2>Enter Your Initials</h2>
+            <small>Needed to sign off on this care task.</small>
+
+            <input
+              className="initialsModalInput"
+              autoFocus
+              value={modalInitials}
+              onChange={e => setModalInitials(e.target.value.toUpperCase())}
+              placeholder="e.g. AR"
+              onKeyDown={e => { if (e.key === 'Enter') confirmInitialsModal(); }}
+            />
+
+            {modalError && <small className="initialsModalError">{modalError}</small>}
+
+            <button type="button" className="roundPrimary wide" onClick={confirmInitialsModal}>
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

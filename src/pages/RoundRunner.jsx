@@ -56,7 +56,6 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
 
   async function load() {
     const rows = await loadRoundSignoffs(shift, todayDateString());
-    console.log('loaded signoffs:', rows.medication);
     setSignoffs(rows);
   }
 
@@ -103,9 +102,16 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
     );
   }, [signoffs.medication, shift]);
 
+  // FIXED: previously just returned false with no visible feedback at all
+  // (only a console.log no one would ever see) — clicking "Mark Given" or
+  // "Given" without initials silently did nothing. Now it shows a real
+  // popup telling the person exactly what's missing.
   function saveName() {
     const name = signedBy.trim();
-    if (!name) return false;
+    if (!name) {
+      window.alert('Please enter your initials before marking this as given.');
+      return false;
+    }
     return true;
   }
 
@@ -114,18 +120,15 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }, [item?.animal?.id]);
 
   async function toggleMed(med) {
-    console.log('toggleMed called', { signedBy, medId: med.id, animalId: item.animal.id });
     if (!saveName()) {
-      console.log('saveName failed - no initials');
       return;
     }
     const key = `${item.animal.id}:${med.id}`;
     const alreadyDone = completedMedKeys.has(key);
-    console.log('alreadyDone:', alreadyDone, 'key:', key);
     try {
       setMedBusy(med.id);
       if (!alreadyDone) {
-        const result = await signOffMedication({
+        await signOffMedication({
           animalId: item.animal.id,
           medicationId: med.id,
           shift,
@@ -133,11 +136,11 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
           givenBy: signedBy,
           notes: note || ''
         });
-        console.log('signOffMedication result:', result);
       }
       await load();
     } catch (err) {
       console.error('toggleMed error:', err);
+      window.alert('Could not save — please try again.');
     } finally {
       setMedBusy('');
     }
@@ -320,7 +323,6 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                 {animalMeds.map(med => {
                   const key = `${item.animal.id}:${med.id}`;
                   const done = completedMedKeys.has(key);
-                  console.log('med row:', med.name, 'key:', key, 'done:', done, 'completedMedKeys:', [...completedMedKeys]);
                   return (
                     <div key={med.id} className={`roundInlineMedRow ${done ? 'done' : ''}`}>
                       <div className="roundInlineMedInfo">
@@ -446,7 +448,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
       )}
 
       <label className="roundInput"><ClipboardList size={17}/><input value={note} onChange={e => setNote(e.target.value)} placeholder="Add note (optional)"/></label>
-      <label className="roundInput"><CheckCircle2 size={17}/><input value={signedBy} onChange={e => setSignedBy(e.target.value)} placeholder="Your initials"/></label>
+      <label className="roundInput"><CheckCircle2 size={17}/><input value={signedBy} onChange={e => setSignedBy(e.target.value.toUpperCase())} placeholder="Your initials"/></label>
 
       {roundType === 'med' ? (
         <div className="roundTwoButtons">

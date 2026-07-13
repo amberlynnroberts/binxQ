@@ -38,8 +38,21 @@ const blankEvent = {
   notes: '',
   dateGiven: '',
   vaccineDuration: '1 year',
-  fleaTickInterval: '30 days'
+  fleaTickInterval: '30 days',
+  lotNumber: '',
+  route: 'SQ (subcutaneous)',
+  expirationDate: '',
+  injectionSite: '',
+  rabiesTagNumber: ''
 };
+
+const vaccineRouteOptions = [
+  'SQ (subcutaneous)',
+  'IM (intramuscular)',
+  'Intranasal',
+  'Oral',
+  'Other'
+];
 
 function getAnimalName(animals, animalId) {
   return animals.find(a => a.id === animalId)?.name || 'Unknown';
@@ -250,7 +263,12 @@ export function VetCalendar({ data, setPage }) {
       notes: event.notes || '',
       dateGiven: event.date_given || '',
       vaccineDuration: event.vaccine_duration || '1 year',
-      fleaTickInterval: event.flea_tick_interval || '30 days'
+      fleaTickInterval: event.flea_tick_interval || '30 days',
+      lotNumber: event.lot_number || '',
+      route: event.route || 'SQ (subcutaneous)',
+      expirationDate: event.expiration_date || '',
+      injectionSite: event.injection_site || '',
+      rabiesTagNumber: event.rabies_tag_number || ''
     });
     setShowAdd(true);
     setTimeout(() => {
@@ -264,10 +282,18 @@ export function VetCalendar({ data, setPage }) {
 
     // Only persist vaccineDuration/fleaTickInterval when relevant to the
     // selected event type, so switching types doesn't leave stale data
-    // from a previous selection attached to the saved record.
+    // from a previous selection attached to the saved record. Same logic
+    // for the vaccine-detail fields (lot #, route, expiration, site, tag).
     const dateGiven = form.dateGiven || null;
     const vaccineDuration = form.eventType === 'Rabies' ? form.vaccineDuration : null;
     const fleaTickInterval = form.eventType === 'Flea/Tick Preventative' ? form.fleaTickInterval : null;
+
+    const isVaccineType = ['Vaccine', 'Rabies', 'Booster'].includes(form.eventType);
+    const lotNumber = isVaccineType ? form.lotNumber || null : null;
+    const route = isVaccineType ? form.route || null : null;
+    const expirationDate = isVaccineType ? form.expirationDate || null : null;
+    const injectionSite = isVaccineType ? form.injectionSite || null : null;
+    const rabiesTagNumber = form.eventType === 'Rabies' ? form.rabiesTagNumber || null : null;
 
     try {
       if (editingEventId) {
@@ -282,7 +308,12 @@ export function VetCalendar({ data, setPage }) {
           notes: form.notes,
           dateGiven,
           vaccineDuration,
-          fleaTickInterval
+          fleaTickInterval,
+          lotNumber,
+          route,
+          expirationDate,
+          injectionSite,
+          rabiesTagNumber
         });
         setMessage('Vet event updated.');
       } else {
@@ -297,7 +328,12 @@ export function VetCalendar({ data, setPage }) {
           notes: form.notes,
           dateGiven,
           vaccineDuration,
-          fleaTickInterval
+          fleaTickInterval,
+          lotNumber,
+          route,
+          expirationDate,
+          injectionSite,
+          rabiesTagNumber
         });
         setMessage('Vet event added.');
       }
@@ -319,9 +355,10 @@ export function VetCalendar({ data, setPage }) {
       setMessage('Initials are required to mark an event complete.');
       return;
     }
-    setCompletedBy(initials.trim());
+    const upper = initials.trim().toUpperCase();
+    setCompletedBy(upper);
     try {
-      await completeVetEvent({ eventId, completedBy: initials.trim() });
+      await completeVetEvent({ eventId, completedBy: upper });
       setMessage('Vet event completed.');
       await load();
     } catch (err) {
@@ -583,6 +620,66 @@ export function VetCalendar({ data, setPage }) {
                 onChange={e => setField('dateGiven', e.target.value)}
               />
             </label>
+          )}
+
+          {(form.eventType === 'Vaccine' || form.eventType === 'Rabies' || form.eventType === 'Booster') && (
+            <>
+              {form.eventType !== 'Rabies' && (
+                <label>
+                  Date Given
+                  <input
+                    type="date"
+                    value={form.dateGiven}
+                    onChange={e => setField('dateGiven', e.target.value)}
+                  />
+                </label>
+              )}
+
+              <label>
+                Lot #
+                <input
+                  value={form.lotNumber}
+                  onChange={e => setField('lotNumber', e.target.value)}
+                  placeholder="e.g. 809422A"
+                />
+              </label>
+
+              <label>
+                Route
+                <select value={form.route} onChange={e => setField('route', e.target.value)}>
+                  {vaccineRouteOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </label>
+
+              <label>
+                Injection Site
+                <input
+                  value={form.injectionSite}
+                  onChange={e => setField('injectionSite', e.target.value)}
+                  placeholder="e.g. Right hind leg"
+                />
+              </label>
+
+              <label>
+                Expiration Date
+                <input
+                  type="date"
+                  value={form.expirationDate}
+                  onChange={e => setField('expirationDate', e.target.value)}
+                />
+              </label>
+
+              {form.eventType === 'Rabies' && (
+                <label>
+                  Rabies Tag #
+                  <input
+                    value={form.rabiesTagNumber}
+                    onChange={e => setField('rabiesTagNumber', e.target.value)}
+                    placeholder="Optional"
+                  />
+                </label>
+              )}
+            </>
           )}
 
           <label>

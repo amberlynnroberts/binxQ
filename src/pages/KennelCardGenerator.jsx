@@ -16,6 +16,7 @@ export function KennelCardGenerator({ setPage }) {
   const [kennelOverride, setKennelOverride] = useState('');
   const [includePhoto, setIncludePhoto] = useState(true);
   const [orientation, setOrientation] = useState('portrait');
+  const [rotateForPrint, setRotateForPrint] = useState(false);
 
   useEffect(() => {
     fetchKennelCheckData({ includeRemoved: true })
@@ -182,6 +183,19 @@ export function KennelCardGenerator({ setPage }) {
               </small>
             </div>
 
+            <label
+              className="wide"
+              style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700, color: 'var(--round-text)' }}
+            >
+              <input
+                type="checkbox"
+                checked={rotateForPrint}
+                onChange={e => setRotateForPrint(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: 'var(--round-green)' }}
+              />
+              Rotate for printer (paper only feeds one way)
+            </label>
+
             <button type="button" className="roundPrimary wide" onClick={handlePrint}>
               <Printer size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
               Print Kennel Card
@@ -239,7 +253,7 @@ export function KennelCardGenerator({ setPage }) {
         );
 
         return (
-          <div className="kennelCardPrintArea">
+          <div className={`kennelCardPrintArea ${rotateForPrint ? `rotate90 ${orientation}` : ''}`}>
             <div className={`kennelCardSheet ${orientation}`}>
               {includePhoto && (
                 <div className="kennelCardPhotoWrap">

@@ -2990,136 +2990,6 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
   gap: 10px;
   margin-top: 12px;
 }
-
-/* === Kennel Card Generator print styles === */
-
-.kennelCardPrintArea {
-  display: none;
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .kennelCardPrintArea,
-  .kennelCardPrintArea * {
-    visibility: visible;
-  }
-
-  .kennelCardPrintArea {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-  }
-
-  .noPrint {
-    display: none !important;
-  }
-
-  @page {
-    size: letter portrait;
-    margin: 0.3in;
-  }
-}
-
-.kennelCardSheet {
-  width: 5in;
-  min-height: 8in;
-  margin: 0 auto;
-  padding: 0.4in;
-  border: 3px solid #000;
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #000;
-  background: #fff;
-}
-
-.kennelCardPhotoWrap {
-  width: 100%;
-  height: 2.6in;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  margin-bottom: 14px;
-  border: 1px solid #999;
-  background: #f4f4f4;
-}
-
-.kennelCardPhoto {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
-}
-
-.kennelCardName {
-  font-size: 44px;
-  text-align: center;
-  margin: 0 0 10px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.kennelCardKennelBadge {
-  text-align: center;
-  font-size: 26px;
-  font-weight: 900;
-  background: #000;
-  color: #fff;
-  padding: 8px;
-  margin-bottom: 18px;
-  border-radius: 4px;
-}
-
-.kennelCardGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.kennelCardGrid div {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px 10px;
-}
-
-.kennelCardGrid b {
-  display: block;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #555;
-  margin-bottom: 2px;
-}
-
-.kennelCardGrid span {
-  font-size: 21px;
-  font-weight: 700;
-}
-
-.kennelCardRow {
-  border-top: 1px solid #ccc;
-  padding: 12px 0;
-}
-
-.kennelCardRow b {
-  display: block;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #555;
-  margin-bottom: 3px;
-}
-
-.kennelCardRow span {
-  font-size: 19px;
-  line-height: 1.35;
-}
-
 /* === Kennel Card Generator print styles === */
 
 .kennelCardPrintArea {
@@ -3360,3 +3230,115 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 .kennelCardSheet.landscape .kennelCardRow span { font-size: 7.5px; line-height: 1.15; }
 .kennelCardSheet.landscape .kennelCardNotesRow b { font-size: 7px; }
 .kennelCardSheet.landscape .kennelCardNotesRow span { font-size: 9px; }
+
+/* === Initials Modal — styled to match the app's round-theme aesthetic === */
+
+.initialsModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 8, 18, 0.72);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.initialsModalCard {
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 8, 18, 0.98));
+  border: 1px solid rgba(57, 211, 83, 0.28);
+  border-radius: 26px;
+  padding: 22px;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+  animation: initialsModalPop 0.16s ease;
+}
+
+@keyframes initialsModalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.initialsModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.initialsModalIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(57, 211, 83, 0.16);
+  border: 1px solid rgba(57, 211, 83, 0.32);
+  color: #39d353;
+  display: grid;
+  place-items: center;
+}
+
+.initialsModalClose {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--round-muted, #98a5b8);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.initialsModalCard h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--round-text, #f8fafc);
+}
+
+.initialsModalCard > small {
+  color: var(--round-muted, #98a5b8);
+  margin-bottom: 10px;
+}
+
+.initialsModalInput {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 16px;
+  border: 1px solid rgba(57, 211, 83, 0.35);
+  background: rgba(2, 8, 18, 0.9);
+  color: var(--round-text, #f8fafc);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 0 14px;
+  outline: none;
+  margin: 6px 0 4px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.initialsModalInput:focus {
+  border-color: #39d353;
+  box-shadow: 0 0 0 4px rgba(57, 211, 83, 0.16);
+}
+
+.initialsModalInput::placeholder {
+  color: rgba(148, 163, 184, 0.45);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.initialsModalError {
+  color: #ff8a8a;
+  margin-bottom: 4px;
+}
+
+.initialsModalCard .roundPrimary {
+  margin-top: 8px;
+}
