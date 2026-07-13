@@ -51,6 +51,13 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   });
   const [addMedBusy, setAddMedBusy] = useState(false);
 
+  // Modal state for entering initials, replacing the old window.alert —
+  // matches the same in-app dialog pattern used on the Daily Care page.
+  const [showInitialsModal, setShowInitialsModal] = useState(false);
+  const [modalInitials, setModalInitials] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
+
   const animals = data?.animals || [];
   const meds = data?.meds || [];
 
@@ -102,17 +109,39 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
     );
   }, [signoffs.medication, shift]);
 
-  // FIXED: previously just returned false with no visible feedback at all
-  // (only a console.log no one would ever see) — clicking "Mark Given" or
-  // "Given" without initials silently did nothing. Now it shows a real
-  // popup telling the person exactly what's missing.
-  function saveName() {
-    const name = signedBy.trim();
-    if (!name) {
-      window.alert('Please enter your initials before marking this as given.');
-      return false;
+  // If initials are already set, runs the action immediately with that
+  // name. Otherwise opens the initials modal and stashes the action to run
+  // once the person confirms — replaces the old window.alert-based flow.
+  function requestInitialsThen(action) {
+    const existing = signedBy.trim();
+    if (existing) {
+      action(existing);
+      return;
     }
-    return true;
+    setModalInitials('');
+    setModalError('');
+    setPendingAction(() => action);
+    setShowInitialsModal(true);
+  }
+
+  function confirmInitialsModal() {
+    const upper = modalInitials.trim().toUpperCase();
+    if (!upper) {
+      setModalError('Please enter your initials.');
+      return;
+    }
+    setSignedBy(upper);
+    setShowInitialsModal(false);
+    setModalError('');
+    const action = pendingAction;
+    setPendingAction(null);
+    action?.(upper);
+  }
+
+  function cancelInitialsModal() {
+    setShowInitialsModal(false);
+    setPendingAction(null);
+    setModalError('');
   }
 
   useEffect(() => {
@@ -120,30 +149,29 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }, [item?.animal?.id]);
 
   async function toggleMed(med) {
-    if (!saveName()) {
-      return;
-    }
-    const key = `${item.animal.id}:${med.id}`;
-    const alreadyDone = completedMedKeys.has(key);
-    try {
-      setMedBusy(med.id);
-      if (!alreadyDone) {
-        await signOffMedication({
-          animalId: item.animal.id,
-          medicationId: med.id,
-          shift,
-          careDate: todayDateString(),
-          givenBy: signedBy,
-          notes: note || ''
-        });
+    requestInitialsThen(async (name) => {
+      const key = `${item.animal.id}:${med.id}`;
+      const alreadyDone = completedMedKeys.has(key);
+      try {
+        setMedBusy(med.id);
+        if (!alreadyDone) {
+          await signOffMedication({
+            animalId: item.animal.id,
+            medicationId: med.id,
+            shift,
+            careDate: todayDateString(),
+            givenBy: name,
+            notes: note || ''
+          });
+        }
+        await load();
+      } catch (err) {
+        console.error('toggleMed error:', err);
+        window.alert('Could not save — please try again.');
+      } finally {
+        setMedBusy('');
       }
-      await load();
-    } catch (err) {
-      console.error('toggleMed error:', err);
-      window.alert('Could not save — please try again.');
-    } finally {
-      setMedBusy('');
-    }
+    });
   }
 
   async function deleteMed(med) {
@@ -183,18 +211,20 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }
 
   async function completeAndNext() {
-    if (!item || !saveName()) return;
-    try {
-      setBusy(true);
-      if (roundType === 'med') await completeMedicationRoundItem({ item, givenBy: signedBy, notes: note });
-      else await completeCareRoundItem({ item, signedBy, notes: note });
-      setNote('');
-      await load();
-      await reload?.();
-      setPage('round-kennels');
-    } finally {
-      setBusy(false);
-    }
+    if (!item) return;
+    requestInitialsThen(async (name) => {
+      try {
+        setBusy(true);
+        if (roundType === 'med') await completeMedicationRoundItem({ item, givenBy: name, notes: note });
+        else await completeCareRoundItem({ item, signedBy: name, notes: note });
+        setNote('');
+        await load();
+        await reload?.();
+        setPage('round-kennels');
+      } finally {
+        setBusy(false);
+      }
+    });
   }
 
   async function saveKennelNumber() {
@@ -457,6 +487,37 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
         </div>
       ) : (
         <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
+      )}
+
+      {showInitialsModal && (
+        <div className="modalOverlay" onClick={cancelInitialsModal}>
+          <div className="modalCard" onClick={e => e.stopPropagation()}>
+            <div className="modalHeader">
+              <b>Enter Your Initials</b>
+              <button
+                type="button"
+                onClick={cancelInitialsModal}
+                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+              >
+                <X size={20}/>
+              </button>
+            </div>
+
+            <input
+              autoFocus
+              value={modalInitials}
+              onChange={e => setModalInitials(e.target.value.toUpperCase())}
+              placeholder="e.g. AR"
+              onKeyDown={e => { if (e.key === 'Enter') confirmInitialsModal(); }}
+            />
+
+            {modalError && <small style={{ color: '#ff4d4f' }}>{modalError}</small>}
+
+            <button type="button" className="primary full" onClick={confirmInitialsModal}>
+              Confirm
+            </button>
+          </div>
+        </div>
       )}
     </main>
   );

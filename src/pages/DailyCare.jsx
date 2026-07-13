@@ -306,26 +306,20 @@ export function DailyCare({ data, reload }) {
       </section>
 
       {showInitialsModal && (
-        <div className="initialsModalOverlay" onClick={cancelInitialsModal}>
-          <div className="initialsModalCard" onClick={e => e.stopPropagation()}>
-            <div className="initialsModalHeader">
-              <div className="initialsModalIcon">
-                <CheckCircle2 size={22}/>
-              </div>
+        <div className="modalOverlay" onClick={cancelInitialsModal}>
+          <div className="modalCard" onClick={e => e.stopPropagation()}>
+            <div className="modalHeader">
+              <b>Enter Your Initials</b>
               <button
                 type="button"
-                className="initialsModalClose"
                 onClick={cancelInitialsModal}
+                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
               >
-                <X size={18}/>
+                <X size={20}/>
               </button>
             </div>
 
-            <h2>Enter Your Initials</h2>
-            <small>Needed to sign off on this care task.</small>
-
             <input
-              className="initialsModalInput"
               autoFocus
               value={modalInitials}
               onChange={e => setModalInitials(e.target.value.toUpperCase())}
@@ -333,9 +327,9 @@ export function DailyCare({ data, reload }) {
               onKeyDown={e => { if (e.key === 'Enter') confirmInitialsModal(); }}
             />
 
-            {modalError && <small className="initialsModalError">{modalError}</small>}
+            {modalError && <small style={{ color: '#ff4d4f' }}>{modalError}</small>}
 
-            <button type="button" className="roundPrimary wide" onClick={confirmInitialsModal}>
+            <button type="button" className="primary full" onClick={confirmInitialsModal}>
               Confirm
             </button>
           </div>
