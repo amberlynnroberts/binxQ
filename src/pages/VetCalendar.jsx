@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { SearchableSelect } from '../components/SearchableSelect';
-import { fetchKennelCheckData } from '../lib/api';
+import { EmployeePillPicker } from '../components/EmployeePillPicker';
 import {
   addVetEvent,
   calculateNextDueDate,
@@ -131,33 +131,26 @@ function QuickTemplateButton({ label, type, name, onClick }) {
 }
 
 export function VetCalendar({ data, setPage }) {
-  // The app-wide `data.animals` prop already excludes archived statuses
-  // (adopted, healthy in home, etc.) at the source, in fetchKennelCheckData
-  // — correct for daily-care pages, but too narrow for Vet Calendar, which
-  // needs to show/schedule events for animals like "Healthy In Home" too.
-  // So this page fetches its own broader list directly instead of relying
-  // on the shared `data` prop.
-  const [allAnimalsRaw, setAllAnimalsRaw] = useState(data?.animals || []);
-
-  useEffect(() => {
-    fetchKennelCheckData({ includeRemoved: true })
-      .then(result => setAllAnimalsRaw(result.animals || []))
-      .catch(console.error);
-  }, []);
-
+  // PERFORMANCE FIX: previously fetched its own full animal list on every
+  // mount — a duplicate of the app-wide fetch App.jsx already does. Now
+  // that api.js always returns every animal (including archived) in that
+  // one shared fetch, and VetCalendar receives the raw unfiltered `data`
+  // prop directly (not the tab-filtered `visibleData`), no separate fetch
+  // is needed at all.
+  //
   // Only excludes animals that have died — 'Deceased', 'Died in Care', and
   // 'Euthanized' are treated the same way here since none of them can have
   // a vet appointment. Everything else (adopted, in foster, healthy in
   // home, etc.) is selectable. Sorted alphabetically by name.
   const animals = useMemo(() => {
     const deceasedStatuses = ['deceased', 'died in care', 'euthanized'];
-    return allAnimalsRaw
+    return (data?.animals || [])
       .filter(animal => {
         const status = String(animal?.shelterluv_status || animal?.status || '').trim().toLowerCase();
         return !deceasedStatuses.includes(status);
       })
       .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
-  }, [allAnimalsRaw]);
+  }, [data]);
 
   const [events, setEvents] = useState([]);
   const [form, setForm] = useState(blankEvent);
@@ -170,6 +163,10 @@ export function VetCalendar({ data, setPage }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [completedBy, setCompletedBy] = useState('');
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [modalName, setModalName] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [pendingEventId, setPendingEventId] = useState(null);
   const [message, setMessage] = useState('');
 
   async function load() {
@@ -348,17 +345,30 @@ export function VetCalendar({ data, setPage }) {
     }
   }
 
-  async function markComplete(eventId) {
-    const initials = window.prompt('Enter your initials to mark this event complete:', completedBy || '');
-    if (initials === null) return; // cancelled
-    if (!initials.trim()) {
-      setMessage('Initials are required to mark an event complete.');
+  function markComplete(eventId) {
+    setPendingEventId(eventId);
+    setModalName(completedBy || '');
+    setModalError('');
+    setShowCompleteModal(true);
+  }
+
+  function cancelCompleteModal() {
+    setShowCompleteModal(false);
+    setPendingEventId(null);
+    setModalError('');
+  }
+
+  async function confirmCompleteModal() {
+    if (!modalName.trim()) {
+      setModalError('Please select your name.');
       return;
     }
-    const upper = initials.trim().toUpperCase();
-    setCompletedBy(upper);
+    setCompletedBy(modalName);
+    setShowCompleteModal(false);
+    const eventId = pendingEventId;
+    setPendingEventId(null);
     try {
-      await completeVetEvent({ eventId, completedBy: upper });
+      await completeVetEvent({ eventId, completedBy: modalName });
       setMessage('Vet event completed.');
       await load();
     } catch (err) {
@@ -771,6 +781,31 @@ export function VetCalendar({ data, setPage }) {
               </div>
             </section>
           ))}
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div className="modalOverlay" onClick={cancelCompleteModal}>
+          <div className="modalCard" onClick={e => e.stopPropagation()}>
+            <div className="modalHeader">
+              <b>Who's completing this?</b>
+              <button
+                type="button"
+                onClick={cancelCompleteModal}
+                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+              >
+                <X size={20}/>
+              </button>
+            </div>
+
+            <EmployeePillPicker value={modalName} onChange={setModalName} />
+
+            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
+
+            <button type="button" className="primary full" onClick={confirmCompleteModal} style={{ marginTop: 12 }}>
+              Confirm
+            </button>
+          </div>
         </div>
       )}
     </main>

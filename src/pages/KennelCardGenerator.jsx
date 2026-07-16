@@ -2,12 +2,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { SearchableSelect } from '../components/SearchableSelect';
-import { fetchKennelCheckData } from '../lib/api';
 import { formatAge } from '../lib/formatAge';
 import { BINX_LOGO_BASE64 } from '../lib/logoData';
 
-export function KennelCardGenerator({ setPage }) {
-  const [allAnimals, setAllAnimals] = useState([]);
+export function KennelCardGenerator({ allAnimals, setPage }) {
   const [selectedId, setSelectedId] = useState('');
   const [foodOptions, setFoodOptions] = useState({ Adult: false, Kitten: false, Wet: false, Dry: false });
   const [foodOther, setFoodOther] = useState('');
@@ -16,16 +14,14 @@ export function KennelCardGenerator({ setPage }) {
   const [kennelOverride, setKennelOverride] = useState('');
   const [includePhoto, setIncludePhoto] = useState(true);
   const [orientation, setOrientation] = useState('portrait');
-  const [rotateForPrint, setRotateForPrint] = useState(false);
 
-  useEffect(() => {
-    fetchKennelCheckData({ includeRemoved: true })
-      .then(result => setAllAnimals(result.animals || []))
-      .catch(console.error);
-  }, []);
-
+  // PERFORMANCE FIX: previously fetched its own full animal list on every
+  // mount — a duplicate of the app-wide fetch App.jsx already does. Now
+  // that api.js always returns every animal in that one shared fetch,
+  // App.jsx passes the raw complete list down as `allAnimals` — no
+  // separate fetch needed here at all.
   const sortedAnimals = useMemo(() => {
-    return [...allAnimals].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+    return [...(allAnimals || [])].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
   }, [allAnimals]);
 
   const animal = sortedAnimals.find(a => a.id === selectedId);
@@ -183,18 +179,10 @@ export function KennelCardGenerator({ setPage }) {
               </small>
             </div>
 
-            <label
-              className="wide"
-              style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 700, color: 'var(--round-text)' }}
-            >
-              <input
-                type="checkbox"
-                checked={rotateForPrint}
-                onChange={e => setRotateForPrint(e.target.checked)}
-                style={{ width: 18, height: 18, accentColor: 'var(--round-green)' }}
-              />
-              Rotate for printer (paper only feeds one way)
-            </label>
+            <div className="wide" style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 8, padding: 10, fontSize: 13, color: 'var(--round-muted)' }}>
+              If your printer can only feed paper one physical way, use your browser's print dialog "Layout" dropdown
+              (Portrait/Landscape) to rotate the whole page — that's more reliable than rotating the card itself.
+            </div>
 
             <button type="button" className="roundPrimary wide" onClick={handlePrint}>
               <Printer size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
@@ -253,7 +241,7 @@ export function KennelCardGenerator({ setPage }) {
         );
 
         return (
-          <div className={`kennelCardPrintArea ${rotateForPrint ? `rotate90 ${orientation}` : ''}`}>
+          <div className="kennelCardPrintArea">
             <div className={`kennelCardSheet ${orientation}`}>
               {includePhoto && (
                 <div className="kennelCardPhotoWrap">

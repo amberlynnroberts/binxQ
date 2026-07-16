@@ -7,6 +7,7 @@ import { signOffQuarantinePaper } from '../lib/reportsApi';
 import { formatAge } from '../lib/formatAge';
 import { medNeededForShift, deleteMedication, createMedication } from '../lib/medUtils';
 import { signOffMedication } from '../lib/dailyCareApi';
+import { EmployeePillPicker } from '../components/EmployeePillPicker';
 
 function ProgressBar({ current, total }) {
   const pct = total ? Math.round((current / total) * 100) : 0;
@@ -125,17 +126,16 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   }
 
   function confirmInitialsModal() {
-    const upper = modalInitials.trim().toUpperCase();
-    if (!upper) {
-      setModalError('Please enter your initials.');
+    if (!modalInitials.trim()) {
+      setModalError('Please select your name.');
       return;
     }
-    setSignedBy(upper);
+    setSignedBy(modalInitials);
     setShowInitialsModal(false);
     setModalError('');
     const action = pendingAction;
     setPendingAction(null);
-    action?.(upper);
+    action?.(modalInitials);
   }
 
   function cancelInitialsModal() {
@@ -264,6 +264,36 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
             }}>View Summary</button>
           <button type="button" className="roundPrimary" onClick={() => setPage('dashboard')}>Back to Dashboard</button>
         </section>
+      </main>
+    );
+  }
+
+  // Distinct from the round-wide "all done" screen above — this handles
+  // navigating directly to ONE specific cat (via selectedRoundAnimal, e.g.
+  // tapping their card on the round board) whose task is already signed
+  // off, even though the round overall isn't finished yet. Previously this
+  // showed the exact same active sign-off form as a not-yet-done cat,
+  // making it look like it still needed to be completed.
+  if (selectedItem?.done) {
+    return (
+      <main className="roundsScreen small">
+        <div className="roundsTop">
+          <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>
+          <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
+          <span/>
+        </div>
+
+        <AnimalHero animal={selectedItem.animal}/>
+
+        <section className={roundType === 'med' ? 'roundComplete blue' : 'roundComplete'} style={{ minHeight: 'auto', padding: '32px 0' }}>
+          <div className="roundConfetti">✓</div>
+          <h1>Already {roundType === 'med' ? 'Given' : 'Completed'}</h1>
+          <p style={{ color: 'var(--round-muted)', textAlign: 'center', margin: 0 }}>
+            {selectedItem.animal.name}'s {roundType === 'med' ? 'medication has' : `${shift} care has`} already been signed off for today.
+          </p>
+        </section>
+
+        <button type="button" className="roundPrimary" onClick={() => setPage('round-kennels')}>Back to Board</button>
       </main>
     );
   }
@@ -478,7 +508,10 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
       )}
 
       <label className="roundInput"><ClipboardList size={17}/><input value={note} onChange={e => setNote(e.target.value)} placeholder="Add note (optional)"/></label>
-      <label className="roundInput"><CheckCircle2 size={17}/><input value={signedBy} onChange={e => setSignedBy(e.target.value.toUpperCase())} placeholder="Your initials"/></label>
+      <label className="roundInput" style={{ flexWrap: 'wrap', alignItems: 'flex-start', paddingTop: 10, paddingBottom: 10 }}>
+        <CheckCircle2 size={17}/>
+        <EmployeePillPicker value={signedBy} onChange={setSignedBy} />
+      </label>
 
       {roundType === 'med' ? (
         <div className="roundTwoButtons">
@@ -493,7 +526,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
         <div className="modalOverlay" onClick={cancelInitialsModal}>
           <div className="modalCard" onClick={e => e.stopPropagation()}>
             <div className="modalHeader">
-              <b>Enter Your Initials</b>
+              <b>Who's signing off?</b>
               <button
                 type="button"
                 onClick={cancelInitialsModal}
@@ -503,17 +536,11 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
               </button>
             </div>
 
-            <input
-              autoFocus
-              value={modalInitials}
-              onChange={e => setModalInitials(e.target.value.toUpperCase())}
-              placeholder="e.g. AR"
-              onKeyDown={e => { if (e.key === 'Enter') confirmInitialsModal(); }}
-            />
+            <EmployeePillPicker value={modalInitials} onChange={setModalInitials} />
 
-            {modalError && <small style={{ color: '#ff4d4f' }}>{modalError}</small>}
+            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
 
-            <button type="button" className="primary full" onClick={confirmInitialsModal}>
+            <button type="button" className="primary full" onClick={confirmInitialsModal} style={{ marginTop: 12 }}>
               Confirm
             </button>
           </div>

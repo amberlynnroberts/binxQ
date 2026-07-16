@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, Pill, Search } f
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { fetchDailyCareSignoffs } from '../lib/dailyCareApi';
 import { todayDateString } from '../lib/careTaskRules';
-import { isQuarantineAnimal } from '../lib/animalFilters';
+import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
 import { getCompletedIdsFromSignoffs, getCompletedMedicationKeys, getKennelProgress, groupAnimalsByKennel } from '../lib/roundBoardUtils';
 import { getKennelColorClass } from '../lib/kennelColors';
 import { kennelShort } from '../components/ui';
@@ -107,8 +107,13 @@ export function RoundKennels({
 
   const loungeAnimals = useMemo(() => {
     if (roundType !== 'med') return [];
+    // FIXED: previously just checked "not quarantine", which swept ANY
+    // non-quarantine animal with active meds into this section — including
+    // Foster cats, who have nothing to do with the actual Cat Lounge.
+    // This now explicitly checks isInRescueAnimal so only genuine lounge
+    // cats show up here.
     return (data?.animals || []).filter(a =>
-      !isQuarantineAnimal(a) &&
+      isInRescueAnimal(a) &&
       (medByAnimal.get(a.id) || []).length > 0
     );
   }, [data, roundType, medByAnimal]);

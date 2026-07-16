@@ -12,6 +12,7 @@ import {
 import { fetchUpcomingVetEvents, summarizeVetEvents } from '../lib/vetEventsApi';
 import { fetchDailyReport } from '../lib/reportsApi';
 import { medNeededForShift } from '../lib/medUtils';
+import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
 
 function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges }) {
   return (
@@ -70,7 +71,7 @@ function getGreeting() {
   return 'Good evening! 🌙';
 }
 
-export function RoundsDashboard({ data, setPage, startRound }) {
+export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
   const [cleaningSignoffs, setCleaningSignoffs] = useState([]);
   const [medSignoffsAM, setMedSignoffsAM] = useState({ cleaning: [], medication: [] });
   const [medSignoffsPM, setMedSignoffsPM] = useState({ cleaning: [], medication: [] });
@@ -79,6 +80,32 @@ export function RoundsDashboard({ data, setPage, startRound }) {
 
   const animals = data?.animals || [];
   const meds = (data?.meds || []).filter(m => m.active);
+
+  // PERFORMANCE FIX: previously fetched its own broader animal list on
+  // every mount — a duplicate of the app-wide fetch App.jsx already does.
+  // Now that api.js always returns every animal in that one shared fetch,
+  // App.jsx passes the raw complete list down as `allAnimals` (separate
+  // from `data.animals`, which is filtered by whichever tab is currently
+  // selected elsewhere) — no separate fetch needed here at all.
+  const allAnimalsBroad = allAnimals || [];
+
+  // FIXED: previously counted every active medication regardless of which
+  // animal it belonged to — so a cat moved to Foster (or anywhere else)
+  // but still holding an old active medication record would inflate the
+  // total denominator, dragging the percentage down even though every
+  // medication actually relevant to today's rounds was fully given.
+  const relevantAnimalIds = useMemo(() => {
+    return new Set(
+      allAnimalsBroad
+        .filter(a => isQuarantineAnimal(a) || isInRescueAnimal(a))
+        .map(a => a.id)
+    );
+  }, [allAnimalsBroad]);
+
+  const relevantMeds = useMemo(() => {
+    if (allAnimalsBroad.length === 0) return meds; // haven't loaded yet — don't filter everything out
+    return meds.filter(m => relevantAnimalIds.has(m.animalId));
+  }, [meds, relevantAnimalIds, allAnimalsBroad.length]);
 
   useEffect(() => {
     fetchCleaningSignoffsForDate(todayDateString())
@@ -175,7 +202,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
     let total = 0;
     let done = 0;
 
-    for (const med of meds) {
+    for (const med of relevantMeds) {
       const needsAM = medNeededForShift(med, 'AM');
       const needsPM = medNeededForShift(med, 'PM');
 
@@ -190,7 +217,7 @@ export function RoundsDashboard({ data, setPage, startRound }) {
     }
 
     return { medTotal: total, medDoneCount: done };
-  }, [meds, medSignoffsAM, medSignoffsPM]);
+  }, [relevantMeds, medSignoffsAM, medSignoffsPM]);
 
   const medComplete = medTotal > 0 && medDoneCount === medTotal;
   const medPercent = medTotal

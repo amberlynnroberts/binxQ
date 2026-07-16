@@ -9,6 +9,7 @@ import { todayDateString } from '../lib/careTaskRules';
 import { formatAge } from '../lib/formatAge';
 import { getKennelColorClass } from '../lib/kennelColors.js';
 import { updateAnimalKennelNumber, clearAnimalKennelNumber } from '../lib/kennelUpdateApi';
+import { updateQuarantineAnimal } from '../lib/api';
 
 function KennelEdit({ animal, onSaved }) {
   const [editing, setEditing] = useState(false);
@@ -134,6 +135,87 @@ function KennelEdit({ animal, onSaved }) {
   );
 }
 
+function MoveToQuarantineButton({ animal, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save(e) {
+    e.stopPropagation();
+    if (!value.trim()) {
+      setError('Kennel number is required.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await updateQuarantineAnimal(animal.id, animal.shelterluv_id, {
+        kennel_number: value.trim(),
+        local_status: 'Quarantine',
+      });
+      onSaved?.();
+      setEditing(false);
+      setValue('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function cancel(e) {
+    e.stopPropagation();
+    setValue('');
+    setError('');
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <input
+          autoFocus
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') save(e);
+            if (e.key === 'Escape') cancel(e);
+          }}
+          placeholder="Kennel #"
+          style={{ width: 72, fontSize: 13, padding: '4px 8px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.95)', color: 'white' }}
+        />
+        <button onClick={save} disabled={saving} style={{ color: '#39d353', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          {saving ? '…' : <Check size={15} />}
+        </button>
+        <button onClick={cancel} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <X size={15} />
+        </button>
+        {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={e => { e.stopPropagation(); setEditing(true); }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(168,85,247,0.14)',
+        border: '1px solid rgba(168,85,247,0.32)',
+        borderRadius: 8, padding: '5px 10px',
+        cursor: 'pointer', fontSize: 12,
+        color: '#d8b4fe',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+      title="Move to Quarantine"
+    >
+      Move to Quarantine
+    </button>
+  );
+}
+
 function statusLabel(animal, animalView) {
   if (animalView === 'quarantine') {
     return animal.kennel && animal.kennel !== '?' ? `Kennel ${animal.kennel.replace(/\D/g, '') || animal.kennel}` : 'No kennel assigned';
@@ -168,6 +250,16 @@ export function Kennels({
   setAnimalView,
   onAnimalUpdated,
 }) {
+  // PERFORMANCE FIX: this page previously did its own full data fetch on
+  // every mount (a duplicate of the app-wide fetch App.jsx already does),
+  // which caused noticeable lag switching to this tab and could fail
+  // silently on a network hiccup, leaving the page empty until a manual
+  // refresh. Now that api.js's fetchKennelCheckData always returns every
+  // animal (including archived) in the one shared app-wide fetch, this
+  // page just uses the `data`/`allAnimals` props directly — no separate
+  // fetch needed. `data.animals` is already correctly filtered by
+  // animalView (App.jsx does this once for everyone), and `allAnimals` is
+  // the full unfiltered list used for the tab count badges.
   const counts = getAnimalFilterCounts(allAnimals);
 
   const list = data.animals.filter(a =>
@@ -197,10 +289,18 @@ export function Kennels({
     );
   }
 
-  // Kennel assignment is available in Quarantine (as before) and now Foster
-  // too, since staff sometimes need to give a foster cat a kennel for an
-  // overnight stay (e.g. post-surgery recovery).
-  const showKennelEdit = animalView === 'quarantine' || animalView === 'foster';
+  // Kennel assignment/clearing is available in Quarantine and Foster (as
+  // before), and now Archived too — so staff can clear a stale kennel
+  // number left over from before a cat was adopted/placed, without
+  // needing direct database access.
+  const showKennelEdit = animalView === 'quarantine' || animalView === 'foster' || animalView === 'archived';
+
+  // "Move to Quarantine" is for Rescue/Lounge and Archived cats (e.g. a
+  // "Healthy in Home" cat that's being returned). Foster cats already work
+  // via the existing kennel-assignment logic (assigning any kennel number
+  // makes a Foster cat count as quarantine automatically — only Lounge is
+  // hard-excluded regardless of kennel, per isQuarantineAnimal).
+  const showMoveToQuarantine = animalView === 'rescue' || animalView === 'archived';
 
   return (
     <main>
@@ -290,6 +390,12 @@ export function Kennels({
             {showKennelEdit && (
               <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                 <KennelEdit animal={a} onSaved={onAnimalUpdated} />
+              </div>
+            )}
+
+            {showMoveToQuarantine && (
+              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                <MoveToQuarantineButton animal={a} onSaved={onAnimalUpdated} />
               </div>
             )}
 

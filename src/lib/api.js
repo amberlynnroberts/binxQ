@@ -100,16 +100,19 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
     medicationsByAnimal.set(med.animal_id, list);
   }
 
+  // PERFORMANCE/RELIABILITY FIX: previously excluded archived animals
+  // (adopted, deceased, healthy in home, etc.) right here at the source,
+  // unless includeRemoved was explicitly passed. That meant every page
+  // needing archived animals (Kennels' Archived tab, Vet Calendar, Meds,
+  // the Dashboard, Adoption Records, Kennel Card Generator) had to make
+  // its own SEPARATE full fetch with includeRemoved:true — duplicating
+  // this entire paginated animals+shelterluv_animals+meds+symptoms+notes
+  // fetch on every single tab switch, causing noticeable lag, and any one
+  // of those redundant fetches failing silently would leave that specific
+  // page's data empty until a manual refresh. Now this always returns
+  // everyone in one shared fetch; filterAnimalsByView (already correct)
+  // handles archived-status exclusion client-side per tab/view instead.
   const animals = (appAnimals || [])
-    // Exclude based on the animal's CURRENT Shelterluv status (adopted,
-    // deceased, healthy in home, etc.) rather than the local `local_status`
-    // flag, which can go stale if an animal returns to custody after being
-    // marked removed (e.g. foster -> lounge) and nothing clears it.
-    .filter(row => {
-      if (includeRemoved) return true;
-      const shelterluvStatus = shelterluvById.get(row.shelterluv_id)?.status || '';
-      return !isArchivedStatus(shelterluvStatus);
-    })
     .map(row => {
       const s = shelterluvById.get(row.shelterluv_id);
 

@@ -3,6 +3,7 @@ import {CheckCircle2, ClipboardCheck, Moon, Pill, RefreshCw, Sun, Trash2, Sparkl
 import {fetchDailyCareSignoffs, removeCleaningSignoff, removeMedicationSignoff, signOffCleaning, signOffMedication, todayDateString} from '../lib/dailyCareApi';
 import { ArrowLeft } from 'lucide-react';
 import { medNeededForShift } from '../lib/medUtils';
+import { EmployeePillPicker } from '../components/EmployeePillPicker';
 
 function signedMap(rows, keyBuilder) {
   return new Map((rows || []).map(row => [keyBuilder(row), row]));
@@ -89,17 +90,16 @@ export function DailyCare({ data, reload }) {
   }
 
   function confirmInitialsModal() {
-    const upper = modalInitials.trim().toUpperCase();
-    if (!upper) {
-      setModalError('Please enter your initials.');
+    if (!modalInitials.trim()) {
+      setModalError('Please select your name.');
       return;
     }
-    setSignedBy(upper);
+    setSignedBy(modalInitials);
     setShowInitialsModal(false);
     setModalError('');
     const action = pendingAction;
     setPendingAction(null);
-    action?.(upper);
+    action?.(modalInitials);
   }
 
   function cancelInitialsModal() {
@@ -195,8 +195,8 @@ export function DailyCare({ data, reload }) {
           <input type="date" value={careDate} onChange={e => setCareDate(e.target.value)} />
         </label>
 
-        <label>Your Name / Initials
-          <input value={signedBy} onChange={e => setSignedBy(e.target.value.toUpperCase())} placeholder="AR" />
+        <label>Your Name
+          <EmployeePillPicker value={signedBy} onChange={setSignedBy} />
         </label>
 
         {message && (
@@ -309,7 +309,7 @@ export function DailyCare({ data, reload }) {
         <div className="modalOverlay" onClick={cancelInitialsModal}>
           <div className="modalCard" onClick={e => e.stopPropagation()}>
             <div className="modalHeader">
-              <b>Enter Your Initials</b>
+              <b>Who's signing off?</b>
               <button
                 type="button"
                 onClick={cancelInitialsModal}
@@ -319,17 +319,11 @@ export function DailyCare({ data, reload }) {
               </button>
             </div>
 
-            <input
-              autoFocus
-              value={modalInitials}
-              onChange={e => setModalInitials(e.target.value.toUpperCase())}
-              placeholder="e.g. AR"
-              onKeyDown={e => { if (e.key === 'Enter') confirmInitialsModal(); }}
-            />
+            <EmployeePillPicker value={modalInitials} onChange={setModalInitials} />
 
-            {modalError && <small style={{ color: '#ff4d4f' }}>{modalError}</small>}
+            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
 
-            <button type="button" className="primary full" onClick={confirmInitialsModal}>
+            <button type="button" className="primary full" onClick={confirmInitialsModal} style={{ marginTop: 12 }}>
               Confirm
             </button>
           </div>

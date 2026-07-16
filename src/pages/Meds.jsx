@@ -2,27 +2,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Empty, kennelShort } from '../components/ui';
 import { fetchDailyCareSignoffs, todayDateString } from '../lib/dailyCareApi';
-import { fetchKennelCheckData } from '../lib/api';
+import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
 
-export function Meds({ data, select }) {
+export function Meds({ data, allAnimals, select }) {
   const [signoffsAM, setSignoffsAM] = useState({ cleaning: [], medication: [] });
   const [signoffsPM, setSignoffsPM] = useState({ cleaning: [], medication: [] });
 
-  // FIXED: previously used `data.animals`, which is already filtered down to
-  // whatever view chip (Quarantine/Rescue/Archived) happened to be selected
-  // on the Kennels page. `data.meds` itself is NOT filtered by that chip —
-  // so a medication for a Cat Lounge animal (like Hart) would exist in
-  // data.meds but silently get dropped here because the animal lookup
-  // against the filtered data.animals would fail. This page now fetches its
-  // own full animal list (all non-deceased animals) so a medication shows
-  // up here regardless of which filter chip is active elsewhere in the app.
-  const [allAnimals, setAllAnimals] = useState(data?.animals || []);
-
-  useEffect(() => {
-    fetchKennelCheckData({ includeRemoved: true })
-      .then(result => setAllAnimals(result.animals || []))
-      .catch(console.error);
-  }, []);
+  // PERFORMANCE FIX: previously fetched its own full animal list on every
+  // mount — a duplicate of the app-wide fetch App.jsx already does. Now
+  // that api.js always returns every animal in that one shared fetch,
+  // App.jsx passes the raw complete list down as `allAnimals` (separate
+  // from `data.animals`, which is filtered by whichever tab is currently
+  // selected elsewhere) — no separate fetch needed here at all.
+  const animalsToCheck = allAnimals || data?.animals || [];
 
   useEffect(() => {
     const careDate = todayDateString();
@@ -59,10 +51,12 @@ export function Meds({ data, select }) {
     return { amGiven, pmGiven, checkAM, checkPM };
   }
 
-  console.log('MEDS DEBUG total data.meds:', data.meds.length);
-  console.log('MEDS DEBUG Hart med in data.meds?', data.meds.find(m => m.animalId === 'b5ca4d99-3092-45fd-bbb0-4b40eef4076c'));
-  console.log('MEDS DEBUG total allAnimals:', allAnimals.length);
-  console.log('MEDS DEBUG Hart in allAnimals?', allAnimals.find(a => a.id === 'b5ca4d99-3092-45fd-bbb0-4b40eef4076c'));
+  // Only Quarantine and Cat Lounge animals belong on this page — a cat
+  // that's moved to Foster (or anywhere else) should no longer show up
+  // here just because they still have an active medication record.
+  function isRelevantAnimal(animal) {
+    return isQuarantineAnimal(animal) || isInRescueAnimal(animal);
+  }
 
   return (
     <main>
@@ -77,8 +71,9 @@ export function Meds({ data, select }) {
       <div className="list">
         {data.meds.length === 0 && <Empty text="No medications for this view." />}
         {data.meds.map(m => {
-          const a = allAnimals.find(x => x.id === m.animalId);
+          const a = animalsToCheck.find(x => x.id === m.animalId);
           if (!a) return null;
+          if (!isRelevantAnimal(a)) return null;
 
           const { amGiven, pmGiven, checkAM, checkPM } = statusForMed(m);
 

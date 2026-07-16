@@ -20,11 +20,11 @@ import { QuarantineChecklist } from './pages/QuarantineChecklist';
 import { RoundKennels } from './pages/RoundKennels';
 import { VetTasks } from './pages/VetTasks';
 import { VetCalendar } from './pages/VetCalendar';
-import PasscodeGate from './components/PasscodeGate';
 import FeedbackModal from './components/FeedbackModal';
 import QuarantineCardGenerator from './pages/QuarantineCardGenerator';
 import { AdoptionRecords } from './pages/AdoptionRecords';
 import { KennelCardGenerator } from './pages/KennelCardGenerator';
+import { ManageEmployees } from './pages/ManageEmployees';
 
 export default function App() {
   const {data, loading, dbStatus, setDbStatus, reload } = useKennelData();
@@ -132,16 +132,15 @@ export default function App() {
     : defaultAnimalForm();
 
   return (
-    <PasscodeGate>
-      <RoundsShell 
-        page={page} 
-        setPage={setPage} 
-        animalView={animalView} 
-        setAnimalView={setAnimalView}
-        onMedRound={() => startRound('med', 'AM')}
-        activeRoundType={activeRound.type}>
-        <button
-          className="floatingFeedback"
+    <RoundsShell 
+      page={page} 
+      setPage={setPage} 
+      animalView={animalView} 
+      setAnimalView={setAnimalView}
+      onMedRound={() => startRound('med', 'AM')}
+      activeRoundType={activeRound.type}>
+      <button
+        className="floatingFeedback"
           onClick={() => setShowFeedback(true)}>
           💬
         </button>
@@ -151,6 +150,7 @@ export default function App() {
         {page === 'dashboard' && (
           <RoundsDashboard
             data={visibleData}
+            allAnimals={data.animals}
             alerts={alerts}
             setPage={setPage}
             startRound={startRound}
@@ -268,6 +268,7 @@ export default function App() {
         {page === 'meds' && (
           <Meds
             data={visibleData}
+            allAnimals={data.animals}
             select={selectAnimal}
           />
         )}
@@ -300,15 +301,18 @@ export default function App() {
         )}
 
         {page === 'adoption-records' && (
-          <AdoptionRecords setPage={setPage} />
+          <AdoptionRecords allAnimals={data.animals} setPage={setPage} />
         )}
 
         {page === 'kennel-card-generator' && (
-          <KennelCardGenerator setPage={setPage} />
+          <KennelCardGenerator allAnimals={data.animals} setPage={setPage} />
+        )}
+
+        {page === 'manage-employees' && (
+          <ManageEmployees setPage={setPage} />
         )}
 
         {page === 'text-alert' && <TextAlert />}
       </RoundsShell>
-    </PasscodeGate>
   );
 }

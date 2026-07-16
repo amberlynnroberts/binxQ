@@ -63,11 +63,18 @@ export function More({ reload, dbStatus, setDbStatus, setPage }) {
           Reports
         </button>
 
-        <button
+        {/* <button
           type="button"
           className="actionCardButton"
           onClick={() => setPage('kennel-card-generator')}>
           Kennel Card Generator
+        </button> */}
+
+        <button
+          type="button"
+          className="actionCardButton"
+          onClick={() => setPage('manage-employees')}>
+          Manage Employees
         </button>
 
         {/* <button

@@ -1,24 +1,19 @@
 // pages/AdoptionRecords.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { AdoptionRecordButton } from '../components/AdoptionRecordButton';
-import { fetchKennelCheckData } from '../lib/api';
 
-export function AdoptionRecords({ setPage }) {
-  const [allAnimals, setAllAnimals] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function AdoptionRecords({ allAnimals, setPage }) {
   const [selectedId, setSelectedId] = useState('');
 
-  useEffect(() => {
-    fetchKennelCheckData({ includeRemoved: true })
-      .then(result => setAllAnimals(result.animals || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
+  // PERFORMANCE FIX: previously fetched its own full animal list on every
+  // mount — a duplicate of the app-wide fetch App.jsx already does. Now
+  // that api.js always returns every animal in that one shared fetch,
+  // App.jsx passes the raw complete list down as `allAnimals` — no
+  // separate fetch needed here at all.
   const sortedAnimals = useMemo(() => {
-    return [...allAnimals].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+    return [...(allAnimals || [])].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
   }, [allAnimals]);
 
   const selectedAnimal = sortedAnimals.find(a => a.id === selectedId) || null;
@@ -53,7 +48,7 @@ export function AdoptionRecords({ setPage }) {
             options={sortedAnimals}
             getLabel={(animal) => animal.name}
             getValue={(animal) => animal.id}
-            placeholder={loading ? 'Loading cats...' : 'Select cat...'}
+            placeholder="Select cat..."
           />
         </label>
 
