@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, Pill, Search } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, Circle, ClipboardCheck, Pill, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { fetchDailyCareSignoffs } from '../lib/dailyCareApi';
 import { todayDateString } from '../lib/careTaskRules';
-import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
+import { isQuarantineAnimal, isInRescueAnimal, isArchivedAnimal } from '../lib/animalFilters';
 import { getCompletedIdsFromSignoffs, getCompletedMedicationKeys, getKennelProgress, groupAnimalsByKennel } from '../lib/roundBoardUtils';
 import { getKennelColorClass } from '../lib/kennelColors';
 import { kennelShort } from '../components/ui';
@@ -35,6 +35,43 @@ function CatStatusBadge({ done, roundType }) {
     <span className={roundType === 'med' ? 'catDueBadge blue' : 'catDueBadge'}>
       {roundType === 'med' ? 'Med due' : 'Needs care'}
     </span>
+  );
+}
+
+// Per-shift medication pill — shown separately for AM and PM whenever a
+// cat has a medication needing that shift. Clickable (and only clickable)
+// when that shift isn't done yet, so tapping it opens the sign-off screen
+// scoped to that specific shift. Once both shifts are done, the parent
+// renders a single combined "Done" badge instead of these.
+function MedShiftPill({ shiftLabel, done, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={e => {
+        e.stopPropagation();
+        if (!done) onClick();
+      }}
+      disabled={done}
+      title={done ? `${shiftLabel} given` : `Mark ${shiftLabel} given`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '3px 8px',
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 700,
+        border: '1px solid',
+        borderColor: done ? 'rgba(57, 211, 83, 0.35)' : 'rgba(59, 130, 246, 0.35)',
+        background: done ? 'rgba(57, 211, 83, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+        color: done ? '#39d353' : '#3b82f6',
+        cursor: done ? 'default' : 'pointer',
+        lineHeight: 1,
+      }}
+    >
+      {done ? <CheckCircle2 size={13}/> : <Circle size={13}/>}
+      {shiftLabel} {done ? 'Done' : 'Med Due'}
+    </button>
   );
 }
 
@@ -70,13 +107,26 @@ export function RoundKennels({
   shift = 'AM',
   setPage,
   setSelectedRoundAnimal,
-  setSelectedRoundMedication
+  setSelectedRoundMedication,
+  // NEW — must be wired up in App.jsx alongside setSelectedRoundAnimal /
+  // setSelectedRoundMedication, so RoundRunner opens on the shift the user
+  // actually tapped (AM or PM), rather than whatever shift the round was
+  // originally launched with.
+  setSelectedRoundShift
 }) {
   const [signoffs, setSignoffs] = useState({ cleaning: [], medication: [] });
+
+  // Medication "done" needs to reflect the whole day, not just a single
+  // launched shift — a BID (AM+PM) medication isn't done until BOTH doses
+  // are signed off, and the board needs to show AM/PM status independently
+  // regardless of which shift the round was started with.
+  const [signoffsAM, setSignoffsAM] = useState({ cleaning: [], medication: [] });
+  const [signoffsPM, setSignoffsPM] = useState({ cleaning: [], medication: [] });
+
   const [query, setQuery] = useState('');
 
   const animals = useMemo(() => {
-    return (data?.animals || []).filter(isQuarantineAnimal);
+    return (data?.animals || []).filter(a => isQuarantineAnimal(a) && !isArchivedAnimal(a));
   }, [data]);
 
   const meds = data?.meds || [];
@@ -87,23 +137,72 @@ export function RoundKennels({
       .catch(console.error);
   }, [animals.length, shift]);
 
+  useEffect(() => {
+    const careDate = todayDateString();
+    Promise.all([
+      fetchDailyCareSignoffs({ careDate, shift: 'AM' }),
+      fetchDailyCareSignoffs({ careDate, shift: 'PM' }),
+    ])
+      .then(([am, pm]) => {
+        setSignoffsAM(am);
+        setSignoffsPM(pm);
+      })
+      .catch(console.error);
+  }, [animals.length]);
+
   const completedCareIds = useMemo(() => {
     return getCompletedIdsFromSignoffs(signoffs.cleaning || [], shift);
   }, [signoffs, shift]);
 
-  const completedMedKeys = useMemo(() => {
-    return getCompletedMedicationKeys(signoffs.medication || [], shift);
-  }, [signoffs, shift]);
+  const completedMedKeysAM = useMemo(() => {
+    return getCompletedMedicationKeys(signoffsAM.medication || [], 'AM');
+  }, [signoffsAM]);
 
+  const completedMedKeysPM = useMemo(() => {
+    return getCompletedMedicationKeys(signoffsPM.medication || [], 'PM');
+  }, [signoffsPM]);
+
+  function isKeyDone(shiftName, animalId, medId) {
+    const keys = shiftName === 'AM' ? completedMedKeysAM : completedMedKeysPM;
+    return keys.has(`${animalId}:${medId}`);
+  }
+
+  // For the med round, meds are grouped regardless of the launched `shift`
+  // prop — the board now shows AM/PM status per cat independently, rather
+  // than only ever showing whichever meds matched the single shift the
+  // round happened to be started with.
   const medByAnimal = useMemo(() => {
     const map = new Map();
-    for (const med of meds.filter(m => m.active && medNeededForShift(m, shift))) {
+    for (const med of meds.filter(m => m.active)) {
       const list = map.get(med.animalId) || [];
       list.push(med);
       map.set(med.animalId, list);
     }
     return map;
-  }, [meds, shift]);
+  }, [meds]);
+
+  // Per-cat AM/PM medication status, built from the full-day signoff data.
+  function getMedShiftStatus(animal) {
+    const medsForAnimal = medByAnimal.get(animal.id) || [];
+    const amMeds = medsForAnimal.filter(m => medNeededForShift(m, 'AM'));
+    const pmMeds = medsForAnimal.filter(m => medNeededForShift(m, 'PM'));
+
+    const amNeeded = amMeds.length > 0;
+    const pmNeeded = pmMeds.length > 0;
+    const amDone = amNeeded && amMeds.every(m => isKeyDone('AM', animal.id, m.id));
+    const pmDone = pmNeeded && pmMeds.every(m => isKeyDone('PM', animal.id, m.id));
+
+    const fullyDone = (amNeeded || pmNeeded) && (!amNeeded || amDone) && (!pmNeeded || pmDone);
+
+    return { amMeds, pmMeds, amNeeded, pmNeeded, amDone, pmDone, fullyDone };
+  }
+
+  function isCatDone(animal) {
+    if (roundType === 'med') {
+      return getMedShiftStatus(animal).fullyDone;
+    }
+    return completedCareIds.has(animal.id);
+  }
 
   const loungeAnimals = useMemo(() => {
     if (roundType !== 'med') return [];
@@ -114,6 +213,7 @@ export function RoundKennels({
     // cats show up here.
     return (data?.animals || []).filter(a =>
       isInRescueAnimal(a) &&
+      !isArchivedAnimal(a) &&
       (medByAnimal.get(a.id) || []).length > 0
     );
   }, [data, roundType, medByAnimal]);
@@ -122,9 +222,9 @@ export function RoundKennels({
     let list = animals;
 
     if (roundType === 'med') {
-      // Any quarantine cat with meds due this shift stays visible, done or
-      // not — status is shown via the kennel badge dot / status badge
-      // rather than the cat disappearing once finished.
+      // Any quarantine cat with active meds stays visible, done or not —
+      // status is shown via the kennel badge dot / AM-PM pills rather than
+      // the cat disappearing once finished.
       list = list.filter(animal => (medByAnimal.get(animal.id) || []).length > 0);
     }
 
@@ -138,7 +238,7 @@ export function RoundKennels({
     }
 
     return list;
-  }, [animals, roundType, medByAnimal, completedMedKeys, query]);
+  }, [animals, roundType, medByAnimal, query]);
 
   // Kept for the overall progress pill at the top of the quarantine section,
   // even though cats now render as one flat list rather than grouped
@@ -155,24 +255,29 @@ export function RoundKennels({
     });
   }, [visibleAnimals]);
 
-  function openCat(animal) {
-    const activeMeds = medByAnimal.get(animal.id) || [];
+  // targetShift is optional — when a specific AM/PM pill is tapped we know
+  // exactly which shift to open; otherwise (tapping the rest of the card)
+  // default to whichever shift still needs action, AM first.
+  function openCat(animal, targetShift) {
+    const medsForAnimal = medByAnimal.get(animal.id) || [];
+
+    let shiftToUse = targetShift;
+    if (!shiftToUse) {
+      const status = getMedShiftStatus(animal);
+      shiftToUse = (status.amNeeded && !status.amDone) ? 'AM'
+        : (status.pmNeeded && !status.pmDone) ? 'PM'
+        : 'AM';
+    }
+
+    const medsForShift = medsForAnimal.filter(m => medNeededForShift(m, shiftToUse));
+    const nextMed = medsForShift.find(m => !isKeyDone(shiftToUse, animal.id, m.id)) || medsForShift[0];
+
     setSelectedRoundAnimal?.(animal.id);
+    setSelectedRoundMedication?.(roundType === 'med' ? (nextMed?.id || null) : null);
     if (roundType === 'med') {
-      const nextMed = activeMeds.find(med => !completedMedKeys.has(`${animal.id}:${med.id}`));
-      setSelectedRoundMedication?.(nextMed?.id || null);
-    } else {
-      setSelectedRoundMedication?.(null);
+      setSelectedRoundShift?.(shiftToUse);
     }
     setPage('round-runner');
-  }
-
-  function isCatDone(animal) {
-    if (roundType === 'med') {
-      const activeMeds = medByAnimal.get(animal.id) || [];
-      return activeMeds.length > 0 && activeMeds.every(med => completedMedKeys.has(`${animal.id}:${med.id}`));
-    }
-    return completedCareIds.has(animal.id);
   }
 
   function getProgressForCats(cats) {
@@ -185,8 +290,7 @@ export function RoundKennels({
     if (roundType === 'med') {
       const medCatsDone = new Set();
       for (const cat of countedCats) {
-        const activeMeds = medByAnimal.get(cat.id) || [];
-        if (activeMeds.length > 0 && activeMeds.every(med => completedMedKeys.has(`${cat.id}:${med.id}`))) {
+        if (getMedShiftStatus(cat).fullyDone) {
           medCatsDone.add(cat.id);
         }
       }
@@ -197,6 +301,23 @@ export function RoundKennels({
 
   const title = roundType === 'med' ? 'Medication Round' : `${shift} Care Round`;
   const overallProgress = getProgressForCats(visibleAnimals);
+
+  function MedCatBadges({ cat }) {
+    const status = getMedShiftStatus(cat);
+    if (status.fullyDone) {
+      return <CatStatusBadge done roundType={roundType} />;
+    }
+    return (
+      <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {status.amNeeded && (
+          <MedShiftPill shiftLabel="AM" done={status.amDone} onClick={() => openCat(cat, 'AM')} />
+        )}
+        {status.pmNeeded && (
+          <MedShiftPill shiftLabel="PM" done={status.pmDone} onClick={() => openCat(cat, 'PM')} />
+        )}
+      </span>
+    );
+  }
 
   return (
     <main className="roundBoardScreen">
@@ -252,13 +373,13 @@ export function RoundKennels({
 
               <div className="roundKennelCards">
                 {loungeAnimals.map(cat => {
-                  const done = isCatDone(cat);
                   const activeMeds = medByAnimal.get(cat.id) || [];
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={cat.id}
-                      className={`roundCatCard ${done ? 'done' : ''}`}
+                      className={`roundCatCard ${isCatDone(cat) ? 'done' : ''}`}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => openCat(cat)}
                     >
                       <AnimalThumb animal={cat}/>
@@ -266,10 +387,10 @@ export function RoundKennels({
                         <b>{cat.name}</b>
                         <small>{cat.shelterluv_status || 'Cat Lounge'}</small>
                         <small>{activeMeds.length} active med{activeMeds.length === 1 ? '' : 's'}</small>
-                        <CatStatusBadge done={done} roundType={roundType}/>
+                        <MedCatBadges cat={cat} />
                       </span>
                       <ChevronRight size={18}/>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -277,8 +398,9 @@ export function RoundKennels({
           )}
 
           {/* Medication Round: flat list of all quarantine cats with meds,
-              sorted by kennel number, status shown via the kennel badge dot.
-              Care Round: grouped back into per-kennel sections, as before. */}
+              sorted by kennel number, status shown via the kennel badge dot
+              plus separate AM/PM pills. Care Round: grouped back into
+              per-kennel sections, as before. */}
           {roundType === 'med' ? (
             sortedVisibleAnimals.length > 0 && (
               <section className="roundKennelSection" key="quarantine-flat">
@@ -296,10 +418,11 @@ export function RoundKennels({
                     const done = isCatDone(cat);
                     const activeMeds = medByAnimal.get(cat.id) || [];
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={cat.id}
                         className={`roundCatCard ${done ? 'done' : ''}`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => openCat(cat)}
                       >
                         <KennelBadgeWithStatus kennel={cat.kennel} done={done} />
@@ -310,10 +433,10 @@ export function RoundKennels({
                           <small>
                             {activeMeds.length} active med{activeMeds.length === 1 ? '' : 's'}
                           </small>
-                          <CatStatusBadge done={done} roundType={roundType}/>
+                          <MedCatBadges cat={cat} />
                         </span>
                         <ChevronRight size={18}/>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

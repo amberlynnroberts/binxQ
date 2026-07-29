@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Empty, kennelShort } from '../components/ui';
 import { fetchDailyCareSignoffs, todayDateString } from '../lib/dailyCareApi';
-import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
+import { isQuarantineAnimal, isInRescueAnimal, isFosterAnimal } from '../lib/animalFilters';
 
 export function Meds({ data, allAnimals, select }) {
   const [signoffsAM, setSignoffsAM] = useState({ cleaning: [], medication: [] });
@@ -54,7 +54,17 @@ export function Meds({ data, allAnimals, select }) {
   // Only Quarantine and Cat Lounge animals belong on this page — a cat
   // that's moved to Foster (or anywhere else) should no longer show up
   // here just because they still have an active medication record.
+  //
+  // FIXED: isQuarantineAnimal() returns true for ANY animal that still has
+  // a kennel number assigned locally, regardless of their actual current
+  // status — and a cat moved to Foster keeps that stale kennel_number
+  // unless their Shelterluv status becomes archived (adopted, deceased,
+  // etc.), which foster isn't. That let foster cats with old medication
+  // records (e.g. Serafina, George) leak back onto this page. Explicitly
+  // excluding isFosterAnimal here closes that gap, matching the same fix
+  // applied to RoundKennels.jsx.
   function isRelevantAnimal(animal) {
+    if (isFosterAnimal(animal)) return false;
     return isQuarantineAnimal(animal) || isInRescueAnimal(animal);
   }
 

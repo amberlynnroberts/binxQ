@@ -77,6 +77,10 @@ export default function App() {
     setPage('card');
   }
 
+  function setSelectedRoundShift(shift) {
+    setActiveRound(prev => ({ ...prev, shift }));
+  }
+
   function startRound(type, shift = 'AM') {
     setActiveRound({ type, shift });
     setSelectedRoundAnimal(null);
@@ -171,12 +175,13 @@ export default function App() {
 
         {page === 'round-kennels' && (
           <RoundKennels
-            data={data}  // unfiltered instead of visibleData
+            data={data}
             roundType={activeRound.type}
             shift={activeRound.shift}
             setPage={setPage}
             setSelectedRoundAnimal={setSelectedRoundAnimal}
             setSelectedRoundMedication={setSelectedRoundMedication}
+            setSelectedRoundShift={setSelectedRoundShift}
           />
         )}
 
