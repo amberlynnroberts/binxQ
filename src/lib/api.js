@@ -177,7 +177,14 @@ export async function fetchKennelCheckData({ includeRemoved = false } = {}) {
         medications: medicationsByAnimal.get(row.id) || [],
         last_synced_at: row.last_synced_at,
         removed_at: row.removed_at,
-        removal_reason: row.removal_reason
+        removal_reason: row.removal_reason,
+        // FIXED: needs_vet_day lives on the `animals` row (row.needs_vet_day)
+        // but was never included in the mapped object returned to the app,
+        // so the Kennels page's Foster-tab vet-day toggle always read
+        // `undefined` for it regardless of what was actually saved in
+        // Supabase. The toggle itself worked (writes succeeded), the UI
+        // just never reflected the true value back.
+        needs_vet_day: row.needs_vet_day ?? false
       };
     })
       .sort(sortKennels);

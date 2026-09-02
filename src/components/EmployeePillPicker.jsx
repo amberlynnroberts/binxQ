@@ -2,6 +2,27 @@
 import React, { useEffect, useState } from 'react';
 import { fetchEmployees } from '../lib/employeesApi';
 
+const CURRENT_EMPLOYEE_KEY = 'binxq-current-employee';
+
+// Exported so other components (e.g. RoundsDashboard's bulk sign-off) can
+// read whoever was most recently picked in ANY EmployeePillPicker, without
+// needing a picker of their own on screen.
+export function getStoredEmployeeName() {
+  try {
+    return localStorage.getItem(CURRENT_EMPLOYEE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function setStoredEmployeeName(name) {
+  try {
+    localStorage.setItem(CURRENT_EMPLOYEE_KEY, name);
+  } catch {
+    // localStorage unavailable — persistence just silently no-ops, picker still works
+  }
+}
+
 /**
  * Shows a wrap of tappable name pills. Tapping one selects it (highlighted)
  * — the parent modal is responsible for its own Confirm/Submit button that
@@ -43,7 +64,10 @@ export function EmployeePillPicker({ value, onChange }) {
           <button
             key={emp.id}
             type="button"
-            onClick={() => onChange(emp.name)}
+            onClick={() => {
+              onChange(emp.name);
+              setStoredEmployeeName(emp.name);
+            }}
             style={{
               border: selected ? '1px solid rgba(57, 211, 83, 0.5)' : '1px solid rgba(148, 163, 184, 0.18)',
               background: selected ? 'rgba(57, 211, 83, 0.16)' : 'rgba(255, 255, 255, 0.05)',

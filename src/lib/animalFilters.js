@@ -98,7 +98,7 @@ export function isFosterAnimal(animal) {
 // kennel too matches how "Move to Quarantine" and the intake form both
 // always set kennel + local_status together — so a genuine deliberate
 // placement always has both, while a stale leftover only has the flag.
-function isExplicitlyMovedToQuarantine(animal) {
+export function isExplicitlyMovedToQuarantine(animal) {
   const flagged = String(animal?.local_status || '').trim() === 'Quarantine';
   const hasKennel = Boolean(animal?.kennel && animal.kennel !== '?');
   return flagged && hasKennel;

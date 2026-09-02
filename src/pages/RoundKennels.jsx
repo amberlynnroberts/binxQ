@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle2, ChevronRight, Circle, ClipboardCheck, Pill, Se
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { fetchDailyCareSignoffs } from '../lib/dailyCareApi';
 import { todayDateString } from '../lib/careTaskRules';
-import { isQuarantineAnimal, isInRescueAnimal, isArchivedAnimal } from '../lib/animalFilters';
+import { isQuarantineAnimal, isInRescueAnimal, isArchivedAnimal, isFosterAnimal, isExplicitlyMovedToQuarantine } from '../lib/animalFilters';
 import { getCompletedIdsFromSignoffs, getCompletedMedicationKeys, getKennelProgress, groupAnimalsByKennel } from '../lib/roundBoardUtils';
 import { getKennelColorClass } from '../lib/kennelColors';
 import { kennelShort } from '../components/ui';
@@ -126,7 +126,10 @@ export function RoundKennels({
   const [query, setQuery] = useState('');
 
   const animals = useMemo(() => {
-    return (data?.animals || []).filter(a => isQuarantineAnimal(a) && !isArchivedAnimal(a));
+    return (data?.animals || []).filter(a =>
+      isExplicitlyMovedToQuarantine(a) ||
+      (isQuarantineAnimal(a) && !isArchivedAnimal(a) && !isFosterAnimal(a))
+    );
   }, [data]);
 
   const meds = data?.meds || [];

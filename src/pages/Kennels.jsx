@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Plus, Search, Pencil, Check, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Plus, Search, Pencil, Check, X, Trash2, Syringe } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
@@ -8,7 +8,7 @@ import { fetchCleaningSignoffsForDate } from '../lib/dailyCareStatusApi';
 import { todayDateString } from '../lib/careTaskRules';
 import { formatAge } from '../lib/formatAge';
 import { getKennelColorClass } from '../lib/kennelColors.js';
-import { updateAnimalKennelNumber, clearAnimalKennelNumber } from '../lib/kennelUpdateApi';
+import { updateAnimalKennelNumber, clearAnimalKennelNumber, toggleAnimalVetDay } from '../lib/kennelUpdateApi';
 import { updateQuarantineAnimal } from '../lib/api';
 
 function KennelEdit({ animal, onSaved }) {
@@ -216,6 +216,57 @@ function MoveToQuarantineButton({ animal, onSaved }) {
   );
 }
 
+// New: toggle button for flagging a foster cat as needing its weekly vet day.
+// Mirrors the styling/interaction pattern of MoveToQuarantineButton above,
+// but is a simple boolean flip rather than a form (no kennel number needed).
+function VetDayToggle({ animal, onSaved }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const needsVetDay = Boolean(animal.needs_vet_day);
+
+  async function toggle(e) {
+    e.stopPropagation();
+    setSaving(true);
+    setError('');
+    try {
+      await toggleAnimalVetDay({
+        animalId: animal.id,
+        shelterluvId: animal.shelterluv_id,
+        needsVetDay: !needsVetDay,
+      });
+      onSaved?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+      <button
+        onClick={toggle}
+        disabled={saving}
+        title={needsVetDay ? 'Remove vet day flag' : 'Mark needs vet day'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          background: needsVetDay ? 'rgba(56,189,248,0.16)' : 'rgba(255,255,255,0.06)',
+          border: needsVetDay ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(148,163,184,0.18)',
+          borderRadius: 8, padding: '5px 10px',
+          cursor: 'pointer', fontSize: 12,
+          color: needsVetDay ? '#7dd3fc' : '#64748b',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+      >
+        <Syringe size={12} />
+        {saving ? '…' : needsVetDay ? 'Needs Vet Day' : 'Mark Vet Day'}
+      </button>
+      {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
+    </div>
+  );
+}
+
 function statusLabel(animal, animalView) {
   if (animalView === 'quarantine') {
     return animal.kennel && animal.kennel !== '?' ? `Kennel ${animal.kennel.replace(/\D/g, '') || animal.kennel}` : 'No kennel assigned';
@@ -302,6 +353,10 @@ export function Kennels({
   // hard-excluded regardless of kennel, per isQuarantineAnimal).
   const showMoveToQuarantine = animalView === 'rescue' || animalView === 'archived';
 
+  // New: the vet-day toggle is only relevant for cats currently in foster,
+  // since that's the group the weekly Thursday vet day reminder targets.
+  const showVetDayToggle = animalView === 'foster';
+
   return (
     <main>
       <div className="roundsTop">
@@ -335,7 +390,7 @@ export function Kennels({
       <div className="viewHelper">
         {animalView === 'quarantine' && 'Showing only active quarantine animals.'}
         {animalView === 'rescue' && 'Showing active animals currently in the rescue.'}
-        {animalView === 'foster' && 'Showing cats currently in foster. Assign a kennel below if one needs to stay overnight (e.g. post-surgery).'}
+        {animalView === 'foster' && 'Showing cats currently in foster. Assign a kennel below if one needs to stay overnight (e.g. post-surgery), or mark a cat as needing its weekly vet day.'}
         {animalView === 'archived' && 'Showing archived animals such as adopted, transferred, deceased, or returned.'}
       </div>
 
@@ -396,6 +451,12 @@ export function Kennels({
             {showMoveToQuarantine && (
               <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
                 <MoveToQuarantineButton animal={a} onSaved={onAnimalUpdated} />
+              </div>
+            )}
+
+            {showVetDayToggle && (
+              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+                <VetDayToggle animal={a} onSaved={onAnimalUpdated} />
               </div>
             )}
 

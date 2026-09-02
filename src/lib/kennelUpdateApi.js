@@ -64,3 +64,45 @@ export async function clearAnimalKennelNumber({ animalId, shelterluvId }) {
 
   return null;
 }
+
+// Flags (or unflags) a foster cat as needing its weekly vet day. Unlike
+// kennel number, this has no Shelterluv-side equivalent field, so it's a
+// straightforward flip on the local `animals` row only — no shelterluv_id
+// param needed, but it's accepted for symmetry with the other update
+// functions in this file in case a future use wants it (e.g. logging which
+// animal flipped by its Shelterluv id).
+export async function toggleAnimalVetDay({ animalId, needsVetDay }) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+
+  const { error: animalError } = await supabase
+    .from('animals')
+    .update({
+      needs_vet_day: Boolean(needsVetDay),
+      last_synced_at: new Date().toISOString()
+    })
+    .eq('id', animalId);
+
+  if (animalError) throw animalError;
+
+  return Boolean(needsVetDay);
+}
+
+export async function addNote(animalId, note, createdBy = 'You') {
+  const { error } = await supabase.from('notes').insert({ animal_id: animalId, note, created_by: createdBy });
+  if (error) throw error;
+}
+
+export async function toggleSymptom(animalId, symptom, isActive) {
+  if (isActive) {
+    const { error } = await supabase
+      .from('symptoms')
+      .update({ active: false, resolved_at: new Date().toISOString() })
+      .eq('animal_id', animalId)
+      .eq('symptom', symptom)
+      .eq('active', true);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('symptoms').insert({ animal_id: animalId, symptom, active: true, created_by: 'You' });
+    if (error) throw error;
+  }
+}

@@ -13,8 +13,14 @@ import { fetchUpcomingVetEvents, summarizeVetEvents } from '../lib/vetEventsApi'
 import { fetchDailyReport } from '../lib/reportsApi';
 import { medNeededForShift } from '../lib/medUtils';
 import { isQuarantineAnimal, isInRescueAnimal } from '../lib/animalFilters';
+import { bulkCompleteQuarantineShift } from '../lib/roundsApi';
+import { getStoredEmployeeName } from '../components/EmployeePillPicker';
 
-function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges }) {
+// Two taps on the clipboard icon within this window count as a double-tap;
+// anything slower is treated as two separate single taps.
+const DOUBLE_TAP_MS = 400;
+
+function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges, onIconTap }) {
   return (
     <button
       type="button"
@@ -23,7 +29,10 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
       disabled={disabled}
     >
       <span className="roundStartIconWrap">
-        <span className="roundStartIcon">
+        <span
+          className="roundStartIcon"
+          onClick={onIconTap ? (e) => { e.stopPropagation(); onIconTap(); } : undefined}
+        >
           <Icon size={31} />
         </span>
         {complete && (
@@ -78,6 +87,12 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
   const [upcomingVetEvents, setUpcomingVetEvents] = useState([]);
   const [checklistSignoffs, setChecklistSignoffs] = useState({ AM: null, PM: null });
 
+  // Tracks the timestamp of the last tap on each shift's clipboard icon, so
+  // a second tap within DOUBLE_TAP_MS can be recognized as the secret
+  // bulk-complete trigger rather than two normal single taps.
+  const [lastIconTap, setLastIconTap] = useState({ AM: 0, PM: 0 });
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   const animals = data?.animals || [];
   const meds = (data?.meds || []).filter(m => m.active);
 
@@ -107,15 +122,15 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
     return meds.filter(m => relevantAnimalIds.has(m.animalId));
   }, [meds, relevantAnimalIds, allAnimalsBroad.length]);
 
-  useEffect(() => {
+  function refreshCleaningSignoffs() {
     fetchCleaningSignoffsForDate(todayDateString())
       .then(setCleaningSignoffs)
       .catch(console.error);
-  }, [animals.length]);
+  }
 
-  useEffect(() => {
+  function refreshMedSignoffs() {
     const careDate = todayDateString();
-    Promise.all([
+    return Promise.all([
       fetchDailyCareSignoffs({ careDate, shift: 'AM' }),
       fetchDailyCareSignoffs({ careDate, shift: 'PM' }),
     ])
@@ -124,6 +139,14 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
         setMedSignoffsPM(pm);
       })
       .catch(console.error);
+  }
+
+  useEffect(() => {
+    refreshCleaningSignoffs();
+  }, [animals.length]);
+
+  useEffect(() => {
+    refreshMedSignoffs();
   }, [meds.length]);
 
   useEffect(() => {
@@ -233,6 +256,55 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
 
   const checklistComplete = Boolean(checklistSignoffs.AM && checklistSignoffs.PM);
 
+  // Secret bulk sign-off: a double-tap on a care round's clipboard icon
+  // (not the card itself, so a single tap still navigates as normal)
+  // marks every quarantine cat's cleaning task AND every active
+  // medication due that shift as complete, signed under whoever was last
+  // picked in any EmployeePillPicker. A confirm dialog is required before
+  // anything is written, since this bypasses the normal per-cat
+  // verification step entirely.
+  function handleCareIconTap(shift) {
+    if (bulkBusy) return;
+    const now = Date.now();
+    const last = lastIconTap[shift] || 0;
+    setLastIconTap(prev => ({ ...prev, [shift]: now }));
+
+    if (now - last < DOUBLE_TAP_MS) {
+      triggerBulkComplete(shift);
+    }
+  }
+
+  async function triggerBulkComplete(shift) {
+    const employeeName = getStoredEmployeeName();
+    if (!employeeName) {
+      window.alert('No name on file yet — pick your name from any round first, then try again.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Mark ALL quarantine cats' ${shift} cleaning AND ${shift} medications as complete, signed as ${employeeName}?\n\nThis skips the normal per-cat check and cannot be easily undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setBulkBusy(true);
+      const result = await bulkCompleteQuarantineShift({
+        allAnimals: allAnimalsBroad,
+        meds: relevantMeds,
+        shift,
+        signedBy: employeeName
+      });
+      refreshCleaningSignoffs();
+      await refreshMedSignoffs();
+      window.alert(`Signed off as ${employeeName}: ${result.animalsSignedOff} ${shift} care tasks, ${result.medsSignedOff} ${shift} medications.`);
+    } catch (err) {
+      console.error('bulkCompleteQuarantineShift error:', err);
+      window.alert('Something went wrong — not everything may have been signed off. Check the board before relying on this.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <main className="roundsDashboard cleanDashboard">
       <section className="roundsWelcome cleanHero">
@@ -281,6 +353,7 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
             onClick={() => {
               if (amUnlocked) startRound('care', 'AM');
             }}
+            onIconTap={() => handleCareIconTap('AM')}
           />
 
           <RoundCard
@@ -294,6 +367,7 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
             onClick={() => {
               if (pmUnlocked) startRound('care', 'PM');
             }}
+            onIconTap={() => handleCareIconTap('PM')}
           />
 
           <RoundCard

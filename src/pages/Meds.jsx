@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Empty, kennelShort } from '../components/ui';
 import { fetchDailyCareSignoffs, todayDateString } from '../lib/dailyCareApi';
-import { isQuarantineAnimal, isInRescueAnimal, isFosterAnimal } from '../lib/animalFilters';
+import { isQuarantineAnimal, isInRescueAnimal, isFosterAnimal, isExplicitlyMovedToQuarantine } from '../lib/animalFilters';
 
 export function Meds({ data, allAnimals, select }) {
   const [signoffsAM, setSignoffsAM] = useState({ cleaning: [], medication: [] });
@@ -64,6 +64,7 @@ export function Meds({ data, allAnimals, select }) {
   // excluding isFosterAnimal here closes that gap, matching the same fix
   // applied to RoundKennels.jsx.
   function isRelevantAnimal(animal) {
+    if (isExplicitlyMovedToQuarantine(animal)) return true;
     if (isFosterAnimal(animal)) return false;
     return isQuarantineAnimal(animal) || isInRescueAnimal(animal);
   }
