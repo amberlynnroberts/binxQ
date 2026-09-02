@@ -20,6 +20,7 @@ import { QuarantineChecklist } from './pages/QuarantineChecklist';
 import { RoundKennels } from './pages/RoundKennels';
 import { VetTasks } from './pages/VetTasks';
 import { VetCalendar } from './pages/VetCalendar';
+import { VetDayList } from './pages/VetDayList';
 import FeedbackModal from './components/FeedbackModal';
 import QuarantineCardGenerator from './pages/QuarantineCardGenerator';
 import { AdoptionRecords } from './pages/AdoptionRecords';
@@ -251,6 +252,10 @@ export default function App() {
             data={data}
             setPage={setPage}
           />
+        )}
+
+        {page === 'vet-day-list' && (
+          <VetDayList setPage={setPage} />
         )}
 
         {page === 'edit' && animal && (

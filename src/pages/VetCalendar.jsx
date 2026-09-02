@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   Filter,
+  PawPrint,
   Pencil,
   Plus,
   Search,
@@ -523,6 +524,11 @@ export function VetCalendar({ data, setPage }) {
         <button type="button" className="roundPrimary" onClick={() => openQuickAdd('Vaccine', '')}>
           <Plus size={18}/>
           Add Event
+        </button>
+
+        <button type="button" className="roundSecondary" onClick={() => setPage('vet-day-list')}>
+          <PawPrint size={18}/>
+          Vet Day List
         </button>
       </section>
 

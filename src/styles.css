@@ -3342,3 +3342,181 @@ body{background:radial-gradient(circle at top left,rgba(57,211,83,.1),transparen
 .initialsModalCard .roundPrimary {
   margin-top: 8px;
 }
+
+/* --- Vet Day List ------------------------------------------------------ */
+
+.vetDayListPage {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.vetDayListToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.vetDayListToolbar small {
+  color: var(--muted);
+}
+
+.vetDayListToolbarActions {
+  display: flex;
+  gap: 8px;
+}
+
+.vetDayListToolbarActions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.vetDayListToolbarActions button:disabled {
+  opacity: 0.6;
+}
+
+.vetDayListToolbarActions .spin {
+  animation: vetDayListSpin 0.9s linear infinite;
+}
+
+@keyframes vetDayListSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.vetDayListError {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.vetDayListError small {
+  display: block;
+  color: var(--danger);
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.vetDayListLoading {
+  color: var(--muted);
+  text-align: center;
+  padding: 30px 0;
+}
+
+.vetDayListTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.vetDayListTable th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--soft);
+  padding: 10px 14px;
+}
+
+.vetDayListTable td {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.vetDayListName {
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.vetDayListLocation {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vetDayListLocation.hbcm {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.vetDayListLocation.foster {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.vetDayListNeeds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vetDayListNeedPill {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.vetDayListNeedPill.empty {
+  background: var(--soft);
+  color: var(--muted);
+}
+
+.vetDayListNotes {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+@media print {
+  .vetDayListPage,
+  .vetDayListPage * {
+    visibility: visible;
+  }
+
+  .vetDayListPage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .vetDayListPage .roundsTop,
+  .vetDayListPage .vetDayListToolbarActions {
+    display: none !important;
+  }
+
+  .vetDayListNeedPill,
+  .vetDayListLocation {
+    background: none !important;
+    color: #000 !important;
+    padding: 0 6px 0 0;
+  }
+}

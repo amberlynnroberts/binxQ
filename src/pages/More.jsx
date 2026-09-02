@@ -45,6 +45,13 @@ export function More({ reload, dbStatus, setDbStatus, setPage }) {
         <button
           type="button"
           className="actionCardButton"
+          onClick={() => setPage('vet-day-list')}>
+          Vet Day List
+        </button>
+
+        <button
+          type="button"
+          className="actionCardButton"
           onClick={() => setPage('adoption-records')}>
           Adoption Records
         </button>
