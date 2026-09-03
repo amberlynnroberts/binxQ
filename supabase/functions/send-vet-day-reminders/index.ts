@@ -25,7 +25,7 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const QUO_API_KEY = Deno.env.get('QUO_API_KEY')!;
 const QUO_FROM_NUMBER = Deno.env.get('QUO_FROM_NUMBER')!;
 const AMBER_PHONE = Deno.env.get('AMBER_PHONE')!;
-
+const QUO_USER_ID = Deno.env.get('QUO_USER_ID')!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 function normalizeName(name) {
@@ -43,6 +43,7 @@ async function sendQuoText(toNumber, content) {
       content,
       from: QUO_FROM_NUMBER,
       to: [toNumber],
+      userId: QUO_USER_ID,
     }),
   });
 
@@ -55,7 +56,7 @@ async function sendQuoText(toNumber, content) {
 }
 
 function vetDayReminderText(fosterName, catName) {
-  return `Hi ${fosterName}, this is a reminder that ${catName} has a vet day scheduled this Thursday. Please plan to bring them in — reply here with any questions!`;
+  return `Hi ${fosterName}, this is a reminder that ${catName} has a vet day scheduled this Thursday at 9AM. Please confirm if you are able to bring them at this time or let us know if you have any questions!`;
 }
 
 Deno.serve(async () => {
