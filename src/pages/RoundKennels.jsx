@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronRight, Circle, ClipboardCheck, Pill, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { fetchDailyCareSignoffs } from '../lib/dailyCareApi';
@@ -9,6 +9,11 @@ import { getKennelColorClass } from '../lib/kennelColors';
 import { kennelShort } from '../components/ui';
 import { formatAge } from '../lib/formatAge';
 import { medNeededForShift } from '../lib/medUtils';
+import { AdminBulkSignoffModal } from '../components/AdminBulkSignoffModal';
+
+// Two taps on the hero clipboard icon within this window open the hidden
+// admin "mark all done" modal (care rounds only).
+const DOUBLE_TAP_MS = 400;
 
 function ProgressPill({ progress }) {
   if (progress.done) {
@@ -125,6 +130,22 @@ export function RoundKennels({
 
   const [query, setQuery] = useState('');
 
+  // Hidden admin bulk sign-off — bumping refreshKey re-fetches signoffs.
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const lastIconTapRef = useRef(0);
+
+  function handleHeroIconTap() {
+    if (roundType !== 'care') return;
+    const now = Date.now();
+    if (now - lastIconTapRef.current < DOUBLE_TAP_MS) {
+      lastIconTapRef.current = 0;
+      setShowAdminModal(true);
+    } else {
+      lastIconTapRef.current = now;
+    }
+  }
+
   const animals = useMemo(() => {
     return (data?.animals || []).filter(a =>
       isExplicitlyMovedToQuarantine(a) ||
@@ -138,7 +159,7 @@ export function RoundKennels({
     fetchDailyCareSignoffs({ careDate: todayDateString(), shift })
       .then(rows => setSignoffs(rows))
       .catch(console.error);
-  }, [animals.length, shift]);
+  }, [animals.length, shift, refreshKey]);
 
   useEffect(() => {
     const careDate = todayDateString();
@@ -151,7 +172,7 @@ export function RoundKennels({
         setSignoffsPM(pm);
       })
       .catch(console.error);
-  }, [animals.length]);
+  }, [animals.length, refreshKey]);
 
   const completedCareIds = useMemo(() => {
     return getCompletedIdsFromSignoffs(signoffs.cleaning || [], shift);
@@ -338,7 +359,13 @@ export function RoundKennels({
           <h2>{roundType === 'med' ? 'All quarantine cats' : 'Grouped by kennel'}</h2>
           <small>Tap a cat card to open the sign-off screen.</small>
         </div>
-        {roundType === 'med' ? <Pill size={34}/> : <ClipboardCheck size={34}/>}
+        {roundType === 'med' ? (
+          <Pill size={34}/>
+        ) : (
+          <span onClick={handleHeroIconTap} style={{ display: 'inline-flex', cursor: 'default' }}>
+            <ClipboardCheck size={34}/>
+          </span>
+        )}
       </section>
 
       <label className="roundBoardSearch">
@@ -493,6 +520,16 @@ export function RoundKennels({
             })
           )}
         </div>
+      )}
+
+      {showAdminModal && (
+        <AdminBulkSignoffModal
+          shift={shift}
+          allAnimals={data?.animals || []}
+          meds={meds}
+          onClose={() => setShowAdminModal(false)}
+          onDone={() => setRefreshKey(k => k + 1)}
+        />
       )}
     </main>
   );

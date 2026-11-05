@@ -1,6 +1,6 @@
 import { fetchDailyCareSignoffs, signOffCleaning, signOffMedication, todayDateString } from './dailyCareApi';
 import { medNeededForShift } from './medUtils';
-import { isQuarantineAnimal, isArchivedAnimal, isFosterAnimal } from './animalFilters';
+import { isQuarantineAnimal, isArchivedAnimal, isFosterAnimal, isExplicitlyMovedToQuarantine } from './animalFilters';
 
 export function buildCareRoundItems(animals = [], signoffs = [], shift = 'AM') {
   const done = new Set((signoffs || []).filter(row => row.shift === shift).map(row => row.animal_id));
@@ -94,8 +94,11 @@ export function completeMedicationRoundItem({ item, givenBy, notes = '', careDat
 // is currently active), since this needs to find every quarantine cat
 // regardless of what the person happens to be looking at right now.
 export async function bulkCompleteQuarantineShift({ allAnimals = [], meds = [], shift, signedBy, careDate = todayDateString(), notes = 'Bulk sign-off' }) {
+  // Same set the Care Round board (RoundKennels) shows, so "mark all done"
+  // covers exactly the cats staff see on the board.
   const quarantineAnimals = allAnimals.filter(a =>
-    isQuarantineAnimal(a) && !isArchivedAnimal(a) && !isFosterAnimal(a)
+    isExplicitlyMovedToQuarantine(a) ||
+    (isQuarantineAnimal(a) && !isArchivedAnimal(a) && !isFosterAnimal(a))
   );
   const quarantineAnimalsWithKennel = quarantineAnimals.filter(a => a.kennel && a.kennel !== '?');
   const quarantineIds = new Set(quarantineAnimals.map(a => a.id));
