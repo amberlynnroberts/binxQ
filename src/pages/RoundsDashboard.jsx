@@ -257,7 +257,7 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
 
   // Secret bulk sign-off: a double-tap on a care round's clipboard icon
   // (not the card itself, so a single tap still navigates as normal) opens
-  // the admin modal, which requires the admin secret + a name pick before
+  // the admin modal, which requires a name pick before
   // marking every quarantine cat's cleaning AND that shift's meds complete.
   function handleCareIconTap(shift) {
     if (adminShift) return;

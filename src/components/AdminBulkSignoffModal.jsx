@@ -4,20 +4,12 @@ import { ShieldCheck, X } from 'lucide-react';
 import { EmployeePillPicker } from './EmployeePillPicker';
 import { bulkCompleteQuarantineShift } from '../lib/roundsApi';
 
-// Admin secret for the hidden "mark everything done" action. Set
-// VITE_ADMIN_SECRET in .env.local and in Vercel → Settings → Environment
-// Variables. If it's not set, the modal refuses to run.
-// NOTE: like the app passcode, this lives in the client bundle, so it's a
-// speed bump for staff, not real security.
-const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET || '';
-
 /**
- * Hidden admin action: marks every quarantine cat's cleaning task AND every
- * active medication due that shift as signed off, under the chosen name.
- * Requires the admin secret plus a name pick before anything is written.
+ * Hidden admin action (opened by double-tapping the care round clipboard
+ * icon): marks every quarantine cat's cleaning task AND every active
+ * medication due that shift as signed off, under the chosen name.
  */
 export function AdminBulkSignoffModal({ shift, allAnimals, meds, onClose, onDone }) {
-  const [secret, setSecret] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,15 +19,6 @@ export function AdminBulkSignoffModal({ shift, allAnimals, meds, onClose, onDone
     e.preventDefault();
     if (busy) return;
 
-    if (!ADMIN_SECRET) {
-      setError('Admin secret is not configured (VITE_ADMIN_SECRET).');
-      return;
-    }
-    if (secret !== ADMIN_SECRET) {
-      setError('Incorrect admin secret.');
-      setSecret('');
-      return;
-    }
     if (!name) {
       setError('Pick the name to sign off as.');
       return;
@@ -94,16 +77,7 @@ export function AdminBulkSignoffModal({ shift, allAnimals, meds, onClose, onDone
               This skips the per-cat check.
             </small>
 
-            <input
-              type="password"
-              value={secret}
-              onChange={e => setSecret(e.target.value)}
-              placeholder="Admin secret"
-              autoFocus
-              autoComplete="off"
-            />
-
-            <small style={{ color: '#98a5b8', display: 'block', margin: '12px 0 8px' }}>Sign off as</small>
+            <small style={{ color: '#98a5b8', display: 'block', margin: '0 0 8px' }}>Sign off as</small>
             <EmployeePillPicker value={name} onChange={setName}/>
 
             {error && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 10 }}>{error}</small>}
