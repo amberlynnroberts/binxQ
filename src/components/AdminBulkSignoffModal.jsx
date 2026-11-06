@@ -55,7 +55,7 @@ export function AdminBulkSignoffModal({ shift, allAnimals, meds, onClose, onDone
             type="button"
             onClick={onClose}
             disabled={busy}
-            style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+            style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex' }}
           >
             <X size={20}/>
           </button>
@@ -72,15 +72,15 @@ export function AdminBulkSignoffModal({ shift, allAnimals, meds, onClose, onDone
           </>
         ) : (
           <form onSubmit={submit}>
-            <small style={{ color: '#98a5b8', display: 'block', marginBottom: 10 }}>
+            <small style={{ color: 'var(--muted)', display: 'block', marginBottom: 10 }}>
               Marks every quarantine cat's {shift} cleaning/feeding/water and all {shift} meds as done.
               This skips the per-cat check.
             </small>
 
-            <small style={{ color: '#98a5b8', display: 'block', margin: '0 0 8px' }}>Sign off as</small>
+            <small style={{ color: 'var(--muted)', display: 'block', margin: '0 0 8px' }}>Sign off as</small>
             <EmployeePillPicker value={name} onChange={setName}/>
 
-            {error && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 10 }}>{error}</small>}
+            {error && <small style={{ color: 'var(--rose)', display: 'block', marginTop: 10 }}>{error}</small>}
 
             <button type="submit" className="primary full" disabled={busy} style={{ marginTop: 14 }}>
               {busy ? 'Signing off…' : `Mark all ${shift} done`}

@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
@@ -50,7 +51,7 @@ const commonSupplyItems = [
   'Other, see notes'
 ];
 
-export function TextAlert() {
+export function TextAlert({ setPage } = {}) {
   const [alertForm, setAlertForm] = useState(blankAlert);
   const [recipientForm, setRecipientForm] = useState(blankRecipient);
   const [recipients, setRecipients] = useState([]);
@@ -156,21 +157,21 @@ export function TextAlert() {
 
   return (
     <main>
-      <h1>Low Stock Alert</h1>
+      <PageHeader title="Low stock alert" onBack={setPage ? () => setPage('more') : undefined} />
 
       <section className="panel recipientPicker">
         <div className="title">
           <h2><Users size={18} /> Send To</h2>
           <button type="button" className="link" onClick={() => setShowAddPerson(prev => !prev)}>
             <Plus size={16} />
-            Add Person
+            Add person
           </button>
         </div>
 
         <div className="recipientToolbar">
           <span>{selectedRecipients.length} selected</span>
           <div className="quick">
-            <button type="button" className="link" onClick={selectAll}>Select All</button>
+            <button type="button" className="link" onClick={selectAll}>Select all</button>
             <button type="button" className="link" onClick={clearAll}>Clear</button>
           </div>
         </div>
@@ -231,7 +232,7 @@ export function TextAlert() {
       </section>
 
       <form className="panel form" onSubmit={e => e.preventDefault()}>
-        <h2><MessageSquare size={18} /> Low Supply Request</h2>
+        <h2><MessageSquare size={18} /> What's running low?</h2>
 
         {message && (
           <p className={message.includes('Opening') || message.includes('added') || message.includes('All') ? 'success' : 'error'}>
@@ -240,7 +241,7 @@ export function TextAlert() {
           </p>
         )}
 
-        <label>Supply Item
+        <label>Item
           <input
             list="common-supply-items"
             value={alertForm.item_name}
@@ -252,7 +253,7 @@ export function TextAlert() {
           </datalist>
         </label>
 
-        <label>Amount Left
+        <label>Amount left
           <input
             value={alertForm.current_amount}
             onChange={e => setAlert('current_amount', e.target.value)}
@@ -280,7 +281,7 @@ export function TextAlert() {
           </select>
         </label>
 
-        <label>Submitted By
+        <label>Your name
           <input
             value={alertForm.submitted_by}
             onChange={e => setAlert('submitted_by', e.target.value)}
@@ -298,7 +299,7 @@ export function TextAlert() {
         </label>
 
         <section className="messagePreview">
-          <b>Message Preview</b>
+          <b>Message preview</b>
           <pre>{previewMessage}</pre>
         </section>
       </form>
@@ -344,7 +345,7 @@ export function TextAlert() {
             sendToNext(0, queue);
           }}>
           <Send size={16} />
-          {busy ? 'Opening...' : `Open Messages App (${selectedRecipients.length})`}
+          {busy ? 'Opening…' : `Text ${selectedRecipients.length} ${selectedRecipients.length === 1 ? 'person' : 'people'}`}
         </button>
       )}
 

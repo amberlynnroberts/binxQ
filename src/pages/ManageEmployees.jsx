@@ -1,4 +1,5 @@
 // pages/ManageEmployees.jsx
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Plus, Trash2, Users } from 'lucide-react';
 import { fetchEmployees, addEmployee, removeEmployee } from '../lib/employeesApi';
@@ -56,13 +57,7 @@ export function ManageEmployees({ setPage }) {
 
   return (
     <main>
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('more')}>
-          <ArrowLeft size={20} />
-        </button>
-        <h1>Manage Employees</h1>
-        <span />
-      </div>
+      <PageHeader title="Manage Employees" onBack={() => setPage('more')} />
 
       <section className="panel" style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -93,7 +88,7 @@ export function ManageEmployees({ setPage }) {
           {employees.length === 0 && <p>No employees added yet.</p>}
           {employees.map(emp => (
             <div className="row" key={emp.id} style={{ gridTemplateColumns: '1fr auto' }}>
-              <b>{emp.name}</b>
+              <b style={{ flex: 1 }}>{emp.name}</b>
               <button type="button" className="icon" onClick={() => handleRemove(emp)} title="Remove">
                 <Trash2 size={16} />
               </button>

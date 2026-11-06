@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CalendarDays, CheckCircle2, Plus, Search, Syringe, Trash2 } from 'lucide-react';
 import { isInCustodyAnimal } from '../lib/animalFilters';
@@ -142,13 +143,7 @@ export function VetTasks({ data, setPage }) {
 
   return (
     <main className="vetTasksPage">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('dashboard')}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>Vet Day</h1>
-        <span/>
-      </div>
+      <PageHeader title="Vet Day" onBack={() => setPage('dashboard')} />
 
       <section className="vetHero">
         <div>

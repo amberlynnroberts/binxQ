@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useMemo, useState } from 'react';
 import { CalendarDays, Download, FileText, RefreshCw, X } from 'lucide-react';
 import {
@@ -42,7 +43,7 @@ function ReportTable({ title, rows, columns, emptyText }) {
   );
 }
 
-export function Reports({ data }) {
+export function Reports({ data, setPage }) {
   const today = todayDateString();
   const [startDate, setStartDate] = useState(addDays(today, -7));
   const [endDate, setEndDate] = useState(today);
@@ -139,6 +140,7 @@ export function Reports({ data }) {
 
   return (
     <main className="roundsScreen">
+      <PageHeader title="Reports" subtitle="Care, med, and checklist sign-offs" onBack={() => setPage?.('more')} />
       <section className="reportHeader">
         <div>
           <p>Binx-Q</p>
@@ -150,18 +152,18 @@ export function Reports({ data }) {
 
       <section className="reportControls">
         <label>
-          Start Date
+          From
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
         </label>
 
         <label>
-          End Date
+          To
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
         </label>
 
         {/* Cat search */}
         <label style={{ position: 'relative' }}>
-          Filter by Cat
+          Cat
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <input
               value={selectedCat ? selectedCat.name : catSearch}
@@ -171,7 +173,7 @@ export function Reports({ data }) {
                 setShowDropdown(true);
               }}
               onFocus={() => setShowDropdown(true)}
-              placeholder="Search cat name..."
+              placeholder="Any cat"
             />
             {selectedCat && (
               <button
@@ -203,7 +205,7 @@ export function Reports({ data }) {
 
         <button type="button" className="roundPrimary" onClick={loadReport} disabled={loading}>
           <RefreshCw size={17}/>
-          {loading ? 'Loading...' : 'Run Report'}
+          {loading ? 'Loading…' : 'Run report'}
         </button>
 
         <button type="button" className="roundSecondary" onClick={exportCsv}>
@@ -216,7 +218,7 @@ export function Reports({ data }) {
 
       {selectedCat && (
         <section className="reportCatBanner">
-          <b>Showing results for: {selectedCat.name}</b>
+          <b>Showing {selectedCat.name} only</b>
           <small>{selectedCat.kennel || 'No kennel'} · {selectedCat.status}</small>
         </section>
       )}

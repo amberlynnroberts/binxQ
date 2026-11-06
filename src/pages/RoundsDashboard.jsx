@@ -7,7 +7,12 @@ import {
   CheckCircle2,
   ClipboardCheck,
   ChevronRight,
+  ClipboardList,
+  PackageOpen,
+  PawPrint,
   Pill,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { fetchUpcomingVetEvents, summarizeVetEvents } from '../lib/vetEventsApi';
 import { fetchDailyReport } from '../lib/reportsApi';
@@ -19,11 +24,12 @@ import { AdminBulkSignoffModal } from '../components/AdminBulkSignoffModal';
 // anything slower is treated as two separate single taps.
 const DOUBLE_TAP_MS = 400;
 
-function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete, disabled, badges, onIconTap }) {
+function RoundCard({ icon: Icon, title, subtitle, tone, onClick, complete, disabled, percent, onIconTap }) {
+  const showRail = typeof percent === 'number' && !disabled;
   return (
     <button
       type="button"
-      className={`roundStartCard ${tone} ${disabled ? 'disabled' : ''}`}
+      className={`roundStartCard ${tone || ''} ${complete ? 'done' : ''} ${disabled ? 'disabled' : ''}`}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
     >
@@ -32,33 +38,26 @@ function RoundCard({ icon: Icon, title, subtitle, count, tone, onClick, complete
           className="roundStartIcon"
           onClick={onIconTap ? (e) => { e.stopPropagation(); onIconTap(); } : undefined}
         >
-          <Icon size={31} />
+          <Icon size={26} />
         </span>
         {complete && (
           <span className="roundCompleteBadge">
-            <CheckCircle2 size={22} />
+            <CheckCircle2 size={14} />
           </span>
         )}
       </span>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <span style={{ display: 'grid', minWidth: 0 }}>
         <b>{title}</b>
         <small>{subtitle}</small>
-        {badges ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
-            {badges.map(b => (
-              <small key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                {b.done ? <CheckCircle2 size={12} /> : null}
-                {b.label}
-              </small>
-            ))}
-          </div>
-        ) : (
-          <small>{count}</small>
+        {showRail && (
+          <span className="roundRail" aria-hidden="true">
+            <span style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+          </span>
         )}
-      </div>
+      </span>
 
-      <ChevronRight />
+      <ChevronRight size={20} />
     </button>
   );
 }
@@ -74,9 +73,9 @@ function GlanceCard({ label, value, tone }) {
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'Good morning! 👋';
-  if (hour >= 12 && hour < 17) return 'Good afternoon! ☀️';
-  return 'Good evening! 🌙';
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
 
 export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
@@ -195,8 +194,11 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
   // that window — producing a false 100% instead of "Not yet available".
   const pmUnlocked = nowHour >= 15;
 
-  const amComplete = amUnlocked && careTasks.filter(t => t.shift === 'AM').length > 0 && amRemaining === 0;
-  const pmComplete = pmUnlocked && careTasks.filter(t => t.shift === 'PM').length > 0 && pmRemaining === 0;
+  // careTasks only lists what's still MISSING, so "done" means nothing
+  // left for that shift (the old check required missing tasks > 0 AND
+  // remaining === 0, which could never both be true).
+  const amComplete = amUnlocked && totalCats > 0 && amRemaining === 0;
+  const pmComplete = pmUnlocked && totalCats > 0 && pmRemaining === 0;
 
   const amPercent = totalCats
     ? Math.round(((totalCats - amRemaining) / totalCats) * 100)
@@ -271,102 +273,107 @@ export function RoundsDashboard({ data, allAnimals, setPage, startRound }) {
     }
   }
 
+  const checklistDoneCount = Number(Boolean(checklistSignoffs.AM)) + Number(Boolean(checklistSignoffs.PM));
+
   return (
-    <main className="roundsDashboard cleanDashboard">
-      <section className="roundsWelcome cleanHero">
-        <p>Binx-Q</p>
-        <h1>{greeting}</h1>
+    <main className="roundsDashboard">
+      <header className="todayHeader">
+        <div>
+          <span className="brandMark"><PawPrint size={16}/> Binx Q</span>
+          <h1>{greeting}</h1>
+          <p>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+      </header>
 
-        <button
-          type="button"
-          className={
-            vetSummary.overdue > 0
-              ? 'vetDashboardAlert danger'
+      <button
+        type="button"
+        className={
+          vetSummary.overdue > 0
+            ? 'vetDashboardAlert danger'
+            : vetSummary.dueSoon > 0
+              ? 'vetDashboardAlert warning'
+              : 'vetDashboardAlert clear'
+        }
+        onClick={() => setPage('vet-calendar')}
+      >
+        <Bell size={20} />
+        <span>
+          <b>
+            {vetSummary.overdue > 0
+              ? `${vetSummary.overdue} overdue vet item${vetSummary.overdue === 1 ? '' : 's'}`
               : vetSummary.dueSoon > 0
-                ? 'vetDashboardAlert warning'
-                : 'vetDashboardAlert clear'
-          }
-          onClick={() => setPage('vet-calendar')}
-        >
-          <Bell size={22} />
-          <span>
-            <b>
-              {vetSummary.overdue > 0
-                ? `${vetSummary.overdue} overdue vet item${vetSummary.overdue === 1 ? '' : 's'}`
-                : vetSummary.dueSoon > 0
-                  ? `${vetSummary.dueSoon} vet item${vetSummary.dueSoon === 1 ? '' : 's'} due in 7 days`
-                  : 'No upcoming vet items'}
-            </b>
-            <small>Tap to open Vet Calendar</small>
-          </span>
+                ? `${vetSummary.dueSoon} vet item${vetSummary.dueSoon === 1 ? '' : 's'} due this week`
+                : 'Nothing due at the vet this week'}
+          </b>
+          <small>Open vet calendar</small>
+        </span>
+        <ChevronRight size={18} />
+      </button>
+
+      <h2 className="sectionLabel">Rounds</h2>
+      <div className="roundStartList">
+        <RoundCard
+          icon={Sun}
+          title="AM care round"
+          subtitle={amUnlocked ? `Clean, feed, water · ${amPercent}% done` : 'Opens at 8 AM'}
+          percent={amUnlocked ? amPercent : null}
+          complete={amComplete}
+          tone="gold"
+          disabled={!amUnlocked}
+          onClick={() => { if (amUnlocked) startRound('care', 'AM'); }}
+          onIconTap={() => handleCareIconTap('AM')}
+        />
+
+        <RoundCard
+          icon={Moon}
+          title="PM care round"
+          subtitle={pmUnlocked ? `Clean, feed, water · ${pmPercent}% done` : 'Opens at 3 PM'}
+          percent={pmUnlocked ? pmPercent : null}
+          complete={pmComplete}
+          tone="gold"
+          disabled={!pmUnlocked}
+          onClick={() => { if (pmUnlocked) startRound('care', 'PM'); }}
+          onIconTap={() => handleCareIconTap('PM')}
+        />
+
+        <RoundCard
+          icon={Pill}
+          title="Medication round"
+          subtitle={medTotal - medDoneCount > 0
+            ? `${medTotal - medDoneCount} dose${(medTotal - medDoneCount) === 1 ? '' : 's'} left today`
+            : 'All doses given today'}
+          percent={medPercent}
+          complete={medComplete}
+          tone="blue"
+          onClick={() => startRound('med', 'AM')}
+        />
+
+        <RoundCard
+          icon={ClipboardCheck}
+          title="Quarantine room checklist"
+          subtitle={`AM ${checklistSignoffs.AM ? 'done' : 'not done'} · PM ${checklistSignoffs.PM ? 'done' : 'not done'}`}
+          percent={checklistDoneCount * 50}
+          complete={checklistComplete}
+          tone="purple"
+          onClick={() => setPage('quarantine-checklist')}
+        />
+      </div>
+
+      <h2 className="sectionLabel">Today so far</h2>
+      <div className="roundGlanceGrid">
+        <GlanceCard label="Care tasks left" value={careTasks.length} tone="green" />
+        <GlanceCard label="Doses left" value={medTotal - medDoneCount} tone="blue" />
+        <GlanceCard label="Cats in kennels" value={totalCats} tone="white" />
+      </div>
+
+      <div className="quickActions">
+        <button type="button" className="quickAction" onClick={() => setPage('text-alert')}>
+          <PackageOpen size={20}/> Low stock
         </button>
-
-        <small>Choose a round to start today's care.</small>
-      </section>
-
-      <section>
-        <h2 className="roundSectionLabel">Start a Round</h2>
-
-        <div className="roundStartList cleanRoundGrid">
-          <RoundCard
-            icon={ClipboardCheck}
-            title="AM Care Round"
-            subtitle={amUnlocked ? 'Cleaning, Feeding, Water' : 'Available at 8AM'}
-            count={amUnlocked ? `${amPercent}% complete` : 'Not yet available'}
-            complete={false}
-            tone="green"
-            disabled={!amUnlocked}
-            onClick={() => {
-              if (amUnlocked) startRound('care', 'AM');
-            }}
-            onIconTap={() => handleCareIconTap('AM')}
-          />
-
-          <RoundCard
-            icon={ClipboardCheck}
-            title="PM Care Round"
-            subtitle={pmUnlocked ? 'Cleaning, Feeding, Water' : 'Available at 3PM'}
-            count={pmUnlocked ? `${pmPercent}% complete` : 'Not yet available'}
-            complete={false}
-            tone="blue"
-            disabled={!pmUnlocked}
-            onClick={() => {
-              if (pmUnlocked) startRound('care', 'PM');
-            }}
-            onIconTap={() => handleCareIconTap('PM')}
-          />
-
-          <RoundCard
-            icon={Pill}
-            title="Medication Round"
-            subtitle={`${medTotal - medDoneCount} medication${(medTotal - medDoneCount) === 1 ? '' : 's'} due`}
-            count={`${medPercent}% complete`}
-            complete={medComplete}
-            tone="purple"
-            onClick={() => startRound('med', 'AM')}
-          />
-
-          <RoundCard
-            icon={ClipboardCheck}
-            title="Quarantine Checklist"
-            subtitle="AM / PM room procedures"
-            complete={checklistComplete}
-            tone="purple"
-            badges={checklistBadges}
-            onClick={() => setPage('quarantine-checklist')}
-          />
-        </div>
-      </section>
-
-      <section className="roundGlancePanel cleanStatsPanel">
-        <h2 className="roundSectionLabel">Today at a glance</h2>
-
-        <div className="roundGlanceGrid cleanStatsGrid">
-          <GlanceCard label="Tasks Due" value={careTasks.length} tone="green" />
-          <GlanceCard label="Meds Due" value={medTotal - medDoneCount} tone="blue" />
-          <GlanceCard label="Cats" value={animals.length} tone="white" />
-        </div>
-      </section>
+        <button type="button" className="quickAction" onClick={() => setPage('vet-day-list')}>
+          <ClipboardList size={20}/> Vet day list
+        </button>
+      </div>
 
       {adminShift && (
         <AdminBulkSignoffModal

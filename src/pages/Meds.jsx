@@ -1,10 +1,12 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react';
 import { Empty, kennelShort } from '../components/ui';
+import { getKennelColorClass } from '../lib/kennelColors';
 import { fetchDailyCareSignoffs, todayDateString } from '../lib/dailyCareApi';
 import { isQuarantineAnimal, isInRescueAnimal, isFosterAnimal, isExplicitlyMovedToQuarantine } from '../lib/animalFilters';
 
-export function Meds({ data, allAnimals, select }) {
+export function Meds({ data, allAnimals, select, setPage }) {
   const [signoffsAM, setSignoffsAM] = useState({ cleaning: [], medication: [] });
   const [signoffsPM, setSignoffsPM] = useState({ cleaning: [], medication: [] });
 
@@ -71,14 +73,7 @@ export function Meds({ data, allAnimals, select }) {
 
   return (
     <main>
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => window.history.back()}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>Medications</h1>
-        <span/>
-      </div>
-      <h1>All Medications</h1>
+      <PageHeader title="Medications" onBack={() => setPage('dashboard')} />
       <div className="list">
         {data.meds.length === 0 && <Empty text="No medications for this view." />}
         {data.meds.map(m => {
@@ -89,25 +84,25 @@ export function Meds({ data, allAnimals, select }) {
           const { amGiven, pmGiven, checkAM, checkPM } = statusForMed(m);
 
           return (
-            <button className="row" key={m.id} onClick={() => select(a.id)}>
-              <span className="badge red">{m.schedule}</span>
-              <span className="kennel">{kennelShort(a.kennel)}</span>
-              <span><b>{a.name}</b><small>{m.name} ({m.dose})</small></span>
-
-              <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button className="row medRow" key={m.id} onClick={() => select(a.id)}>
+              <span className={`kennel ${getKennelColorClass(a.kennel)}`}>{kennelShort(a.kennel)}</span>
+              <span className="medRowInfo">
+                <b>{a.name}</b>
+                <small>{m.name}{m.dose ? ` · ${m.dose}` : ''}</small>
+              </span>
+              <span className="shiftDots">
                 {checkAM && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: amGiven ? '#39d353' : '#98a5b8' }}>
-                    {amGiven ? <CheckCircle2 size={14} /> : <Circle size={14} />} AM
+                  <span className={amGiven ? 'shiftDot given' : 'shiftDot'}>
+                    {amGiven ? <CheckCircle2 size={13} /> : <Circle size={13} />} AM
                   </span>
                 )}
                 {checkPM && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: pmGiven ? '#39d353' : '#98a5b8' }}>
-                    {pmGiven ? <CheckCircle2 size={14} /> : <Circle size={14} />} PM
+                  <span className={pmGiven ? 'shiftDot given' : 'shiftDot'}>
+                    {pmGiven ? <CheckCircle2 size={13} /> : <Circle size={13} />} PM
                   </span>
                 )}
               </span>
-
-              <ChevronRight/>
+              <ChevronRight size={18}/>
             </button>
           );
         })}

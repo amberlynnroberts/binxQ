@@ -1,4 +1,5 @@
 // pages/AdoptionRecords.jsx
+import { PageHeader } from '../components/PageHeader';
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { SearchableSelect } from '../components/SearchableSelect';
@@ -20,13 +21,7 @@ export function AdoptionRecords({ allAnimals, setPage }) {
 
   return (
     <main>
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('more')}>
-          <ArrowLeft size={20} />
-        </button>
-        <h1>Adoption Records</h1>
-        <span />
-      </div>
+      <PageHeader title="Adoption Records" onBack={() => setPage('more')} />
 
       <section className="panel" style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>

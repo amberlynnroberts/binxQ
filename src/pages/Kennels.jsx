@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Plus, Search, Pencil, Check, X, Trash2, Syringe } from 'lucide-react';
+import { ChevronRight, Plus, Search, Pencil, Check, X, Trash2, Syringe } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
 import { Empty, kennelShort } from '../components/ui';
 import { getAnimalFilterCounts } from '../lib/animalFilters';
@@ -69,7 +69,7 @@ function KennelEdit({ animal, onSaved }) {
 
   if (editing) {
     return (
-      <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div className="inlineEdit" onClick={e => e.stopPropagation()}>
         <input
           autoFocus
           value={value}
@@ -79,59 +79,46 @@ function KennelEdit({ animal, onSaved }) {
             if (e.key === 'Escape') cancel(e);
           }}
           placeholder="Kennel #"
-          style={{ width: 72, fontSize: 13, padding: '4px 8px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.95)', color: 'white' }}
         />
-        <button onClick={save} disabled={saving} style={{ color: '#39d353', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          {saving ? '…' : <Check size={15} />}
+        <button onClick={save} disabled={saving} className="chipButton accent">
+          {saving ? 'Saving…' : <><Check size={15} /> Save</>}
         </button>
         {hasKennel && (
-          <button onClick={clear} disabled={clearing} title="Clear kennel" style={{ color: '#ff8a8a', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button onClick={clear} disabled={clearing} title="Clear kennel" aria-label="Clear kennel" className="chipButton danger iconOnly">
             {clearing ? '…' : <Trash2 size={14} />}
           </button>
         )}
-        <button onClick={cancel} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+        <button onClick={cancel} className="chipButton muted iconOnly" aria-label="Cancel">
           <X size={15} />
         </button>
-        {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
+        {error && <small>{error}</small>}
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+    <>
       <button
+        className={hasKennel ? 'chipButton' : 'chipButton muted'}
         onClick={e => { e.stopPropagation(); setEditing(true); setValue(animal.kennel ?? ''); }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(148,163,184,0.18)',
-          borderRadius: 8, padding: '5px 10px',
-          cursor: 'pointer', fontSize: 12,
-          color: hasKennel ? '#cbd5e1' : '#64748b',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-        }}
         title="Edit kennel"
       >
-        <Pencil size={11} />
-        {hasKennel ? animal.kennel : 'Set kennel'}
+        <Pencil size={13} />
+        {hasKennel ? `Kennel ${kennelShort(animal.kennel)}` : 'Set kennel'}
       </button>
 
       {hasKennel && (
         <button
+          className="chipButton danger iconOnly"
           onClick={clear}
           disabled={clearing}
           title="Clear kennel assignment"
-          style={{
-            display: 'flex', alignItems: 'center',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#ff8a8a', flexShrink: 0, padding: '5px',
-          }}
+          aria-label="Clear kennel assignment"
         >
           {clearing ? '…' : <Trash2 size={14} />}
         </button>
       )}
-    </div>
+    </>
   );
 }
 
@@ -173,7 +160,7 @@ function MoveToQuarantineButton({ animal, onSaved }) {
 
   if (editing) {
     return (
-      <div onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div className="inlineEdit" onClick={e => e.stopPropagation()}>
         <input
           autoFocus
           value={value}
@@ -183,35 +170,25 @@ function MoveToQuarantineButton({ animal, onSaved }) {
             if (e.key === 'Escape') cancel(e);
           }}
           placeholder="Kennel #"
-          style={{ width: 72, fontSize: 13, padding: '4px 8px', borderRadius: 8, border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(15,23,42,0.95)', color: 'white' }}
         />
-        <button onClick={save} disabled={saving} style={{ color: '#39d353', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-          {saving ? '…' : <Check size={15} />}
+        <button onClick={save} disabled={saving} className="chipButton accent">
+          {saving ? 'Saving…' : <><Check size={15} /> Save</>}
         </button>
-        <button onClick={cancel} style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+        <button onClick={cancel} className="chipButton muted iconOnly" aria-label="Cancel">
           <X size={15} />
         </button>
-        {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
+        {error && <small>{error}</small>}
       </div>
     );
   }
 
   return (
     <button
+      className="chipButton on"
       onClick={e => { e.stopPropagation(); setEditing(true); }}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        background: 'rgba(168,85,247,0.14)',
-        border: '1px solid rgba(168,85,247,0.32)',
-        borderRadius: 8, padding: '5px 10px',
-        cursor: 'pointer', fontSize: 12,
-        color: '#d8b4fe',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-      title="Move to Quarantine"
+      title="Move to quarantine"
     >
-      Move to Quarantine
+      Move to quarantine
     </button>
   );
 }
@@ -243,27 +220,18 @@ function VetDayToggle({ animal, onSaved }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+    <>
       <button
+        className={needsVetDay ? 'chipButton on' : 'chipButton muted'}
         onClick={toggle}
         disabled={saving}
         title={needsVetDay ? 'Remove vet day flag' : 'Mark needs vet day'}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5,
-          background: needsVetDay ? 'rgba(56,189,248,0.16)' : 'rgba(255,255,255,0.06)',
-          border: needsVetDay ? '1px solid rgba(56,189,248,0.4)' : '1px solid rgba(148,163,184,0.18)',
-          borderRadius: 8, padding: '5px 10px',
-          cursor: 'pointer', fontSize: 12,
-          color: needsVetDay ? '#7dd3fc' : '#64748b',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-        }}
       >
-        <Syringe size={12} />
-        {saving ? '…' : needsVetDay ? 'Needs Vet Day' : 'Mark Vet Day'}
+        <Syringe size={13} />
+        {saving ? 'Saving…' : needsVetDay ? 'Vet day: yes' : 'Add to vet day'}
       </button>
-      {error && <small style={{ color: '#ff4d4f', fontSize: 11 }}>{error}</small>}
-    </div>
+      {error && <small style={{ color: 'var(--rose)' }}>{error}</small>}
+    </>
   );
 }
 
@@ -359,22 +327,15 @@ export function Kennels({
 
   return (
     <main>
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => window.history.back()}>
-          <ArrowLeft size={20} />
-        </button>
-        <h1>Kennels</h1>
-        <span />
-      </div>
-      <div className="title">
+      <div className="screenTitle title">
         <h1>Cats</h1>
-        <button className="primary" onClick={add}><Plus size={18} /> Add</button>
+        <button className="primary" onClick={add}><Plus size={18} /> Add cat</button>
       </div>
 
       <section className="animalFilterPanel">
-        <FilterButton value="quarantine" label="Quarantine Only" count={counts.quarantine} />
-        <FilterButton value="rescue" label="In Rescue" count={counts.rescue} />
-        <FilterButton value="foster" label="In Foster" count={counts.foster} />
+        <FilterButton value="quarantine" label="Quarantine" count={counts.quarantine} />
+        <FilterButton value="rescue" label="Cat Lounge" count={counts.rescue} />
+        <FilterButton value="foster" label="Foster" count={counts.foster} />
         <FilterButton value="archived" label="Archived" count={counts.archived} />
       </section>
 
@@ -388,10 +349,10 @@ export function Kennels({
       </label>
 
       <div className="viewHelper">
-        {animalView === 'quarantine' && 'Showing only active quarantine animals.'}
-        {animalView === 'rescue' && 'Showing active animals currently in the rescue.'}
-        {animalView === 'foster' && 'Showing cats currently in foster. Assign a kennel below if one needs to stay overnight (e.g. post-surgery), or mark a cat as needing its weekly vet day.'}
-        {animalView === 'archived' && 'Showing archived animals such as adopted, transferred, deceased, or returned.'}
+        {animalView === 'quarantine' && null}
+        {animalView === 'rescue' && null}
+        {animalView === 'foster' && 'Set a kennel if a foster cat is staying overnight, or flag it for Thursday vet day.'}
+        {animalView === 'archived' && 'Adopted, transferred, deceased, or returned cats.'}
       </div>
 
       <div className="list">
@@ -409,7 +370,7 @@ export function Kennels({
 
         {list.map(a => (
           <div
-            className="row"
+            className="catRow"
             key={a.id}
             role="button"
             tabIndex={0}
@@ -420,47 +381,27 @@ export function Kennels({
                 select(a.id);
               }
             }}
-            style={{ width: '100%', cursor: 'pointer' }}
           >
-            {animalView === 'quarantine' && (
-              <span className={`kennel ${getKennelColorClass(a.kennel)}`}>
-                {kennelShort(a.kennel)}
+            <div className="catRowMain">
+              {animalView === 'quarantine' && (
+                <span className={`kennel ${getKennelColorClass(a.kennel)}`}>
+                  {kennelShort(a.kennel)}
+                </span>
+              )}
+              <AnimalThumb animal={a} />
+              <span className="catRowInfo">
+                <b>{a.name}</b>
+                <small>{[a.sex, formatAge(a.age), a.desc].filter(v => v && v !== 'Unknown').join(', ')}</small>
+                {animalView !== 'quarantine' && <small>{statusLabel(a, animalView)}</small>}
               </span>
-            )}
+              <ChevronRight size={18} />
+            </div>
 
-            <AnimalThumb animal={a} />
-
-            <span style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-              <b style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {a.name}
-              </b>
-              <small style={{ display: 'block', color: 'var(--round-muted)' }}>
-                {a.desc} • {a.sex} • {formatAge(a.age)}
-              </small>
-              <small style={{ display: 'block', color: 'var(--round-muted)', marginTop: 2 }}>
-                {statusLabel(a, animalView)}
-              </small>
-            </span>
-
-            {showKennelEdit && (
-              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-                <KennelEdit animal={a} onSaved={onAnimalUpdated} />
-              </div>
-            )}
-
-            {showMoveToQuarantine && (
-              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-                <MoveToQuarantineButton animal={a} onSaved={onAnimalUpdated} />
-              </div>
-            )}
-
-            {showVetDayToggle && (
-              <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-                <VetDayToggle animal={a} onSaved={onAnimalUpdated} />
-              </div>
-            )}
-
-            <ChevronRight size={18} style={{ color: 'var(--round-muted)', flexShrink: 0 }} />
+            <div className="catRowActions" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+              {showKennelEdit && <KennelEdit animal={a} onSaved={onAnimalUpdated} />}
+              {showMoveToQuarantine && <MoveToQuarantineButton animal={a} onSaved={onAnimalUpdated} />}
+              {showVetDayToggle && <VetDayToggle animal={a} onSaved={onAnimalUpdated} />}
+            </div>
           </div>
         ))}
       </div>

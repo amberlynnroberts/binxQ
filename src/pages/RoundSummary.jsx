@@ -17,7 +17,7 @@ export function RoundSummary({
         </div>
 
         <h1>
-          {shift} {roundType === 'med' ? 'Medication' : 'Care'} Round Complete
+          {roundType === 'med' ? 'Medication' : `${shift} care`} round done
         </h1>
 
         <div className="roundSummaryGrid">
@@ -42,7 +42,7 @@ export function RoundSummary({
           className="roundPrimary"
           onClick={() => setPage('dashboard')}
         >
-          Return to Dashboard
+          Back to Today
         </button>
 
       </section>

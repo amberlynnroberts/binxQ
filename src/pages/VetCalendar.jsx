@@ -440,15 +440,15 @@ export function VetCalendar({ data, setPage }) {
 
         <div className="vetEventActions">
           <button type="button" onClick={() => openEditEvent(event)} title="Edit">
-            <Pencil size={18}/>
+            <Pencil size={16}/> Edit
           </button>
 
-          <button type="button" onClick={() => markComplete(event.id)} title="Mark complete">
-            <CheckCircle2 size={18}/>
+          <button type="button" onClick={() => markComplete(event.id)} title="Mark done">
+            <CheckCircle2 size={16}/> Done
           </button>
 
-          <button type="button" onClick={() => removeEvent(event.id)} title="Delete">
-            <Trash2 size={18}/>
+          <button type="button" onClick={() => removeEvent(event.id)} title="Delete" aria-label="Delete">
+            <Trash2 size={16}/>
           </button>
         </div>
       </div>
@@ -457,12 +457,9 @@ export function VetCalendar({ data, setPage }) {
 
   return (
     <main className="vetCalendarPage">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('dashboard')}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>Vet Calendar</h1>
-        <span/>
+      <div className="screenTitle">
+        <h1>Vet</h1>
+        <p>Vaccines, boosters, spay/neuter and outside appointments.</p>
       </div>
 
       <section className="vetCalendarHero improved">
@@ -489,7 +486,7 @@ export function VetCalendar({ data, setPage }) {
           onClick={() => setStatusFilter(prev => prev === 'Due Soon' ? 'All' : 'Due Soon')}
         >
           <b>{counts.dueSoon}</b>
-          <small>Due in 7 Days</small>
+          <small>This week</small>
         </button>
 
         <button
@@ -498,7 +495,7 @@ export function VetCalendar({ data, setPage }) {
           onClick={() => setStatusFilter('All')}
         >
           <b>{counts.total}</b>
-          <small>Open Items</small>
+          <small>Open</small>
         </button>
       </section>
 
@@ -523,12 +520,12 @@ export function VetCalendar({ data, setPage }) {
 
         <button type="button" className="roundPrimary" onClick={() => openQuickAdd('Vaccine', '')}>
           <Plus size={18}/>
-          Add Event
+          Add event
         </button>
 
         <button type="button" className="roundSecondary" onClick={() => setPage('vet-day-list')}>
           <PawPrint size={18}/>
-          Vet Day List
+          Vet day list
         </button>
       </section>
 
@@ -540,11 +537,11 @@ export function VetCalendar({ data, setPage }) {
       )}
 
       <section className="vetQuickAddPanel">
-        <QuickTemplateButton label="💉" type="Vaccine" name="Add Vaccine" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="💉" type="Vaccine" name="Vaccine" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🦠" type="Rabies" name="Rabies" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🦟" type="Flea/Tick Preventative" name="Flea/Tick" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🪱" type="Dewormer" name="Dewormer" onClick={openQuickAdd}/>
-        <QuickTemplateButton label="📅" type="Vet Appointment" name="Add Appointment" onClick={openQuickAdd}/>
+        <QuickTemplateButton label="📅" type="Vet Appointment" name="Appointment" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🐾" type="Spay/Neuter" name="Spay/Neuter" onClick={openQuickAdd}/>
         <QuickTemplateButton label="🔁" type="Follow Up" name="Follow Up" onClick={openQuickAdd}/>
       </section>
@@ -798,7 +795,7 @@ export function VetCalendar({ data, setPage }) {
               <button
                 type="button"
                 onClick={cancelCompleteModal}
-                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+                style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex' }}
               >
                 <X size={20}/>
               </button>
@@ -806,7 +803,7 @@ export function VetCalendar({ data, setPage }) {
 
             <EmployeePillPicker value={modalName} onChange={setModalName} />
 
-            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
+            {modalError && <small style={{ color: 'var(--rose)', display: 'block', marginTop: 8 }}>{modalError}</small>}
 
             <button type="button" className="primary full" onClick={confirmCompleteModal} style={{ marginTop: 12 }}>
               Confirm

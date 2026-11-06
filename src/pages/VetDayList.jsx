@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, PawPrint, Printer, RefreshCw } from 'lucide-react';
 import { fetchVetDayList } from '../lib/vetDayListApi';
@@ -29,13 +30,7 @@ export function VetDayList({ setPage }) {
 
   return (
     <main className="vetDayListPage">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('more')}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>Vet Day List</h1>
-        <span/>
-      </div>
+      <PageHeader title="Vet Day List" onBack={() => setPage('vet-calendar')} />
 
       <section className="vetDayListToolbar">
         <small>

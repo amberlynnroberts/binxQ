@@ -1,5 +1,7 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ClipboardList, Droplets, Pill, Utensils, X, Check, Plus, Trash2 } from 'lucide-react';
+import { isQuarantineAnimal, isArchivedAnimal, isFosterAnimal, isExplicitlyMovedToQuarantine } from '../lib/animalFilters';
 import {buildCareRoundItems, buildMedicationRoundItems, completeCareRoundItem, completeMedicationRoundItem, loadRoundSignoffs} from '../lib/roundsApi';
 import { todayDateString } from '../lib/dailyCareApi';
 import { updateAnimalKennelNumber } from '../lib/kennelUpdateApi';
@@ -60,6 +62,13 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   const [pendingAction, setPendingAction] = useState(null);
 
   const animals = data?.animals || [];
+
+  // Same set of cats the Care Round board shows (quarantine cats with a
+  // kennel), so "1 of N" matches the board instead of counting every cat.
+  const careRoundAnimals = useMemo(() => animals.filter(a =>
+    (isExplicitlyMovedToQuarantine(a) || (isQuarantineAnimal(a) && !isArchivedAnimal(a) && !isFosterAnimal(a))) &&
+    a.kennel && a.kennel !== '?'
+  ), [animals]);
   const meds = data?.meds || [];
 
   async function load() {
@@ -74,7 +83,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   const allItems = useMemo(() => {
     return roundType === 'med'
       ? buildMedicationRoundItems(animals, meds, signoffs.medication, shift)
-      : buildCareRoundItems(animals, signoffs.cleaning, shift);
+      : buildCareRoundItems(careRoundAnimals, signoffs.cleaning, shift);
   }, [roundType, animals, meds, signoffs, shift]);
 
   const selectedItem = useMemo(() => {
@@ -249,7 +258,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
       <main className="roundsScreen small">
         <section className={roundType === 'med' ? 'roundComplete blue' : 'roundComplete'}>
           <div className="roundConfetti">✓</div>
-          <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`} Complete!</h1>
+          <h1>{roundType === 'med' ? 'Medication round' : `${shift} care round`} done</h1>
           <div className="roundSummaryGrid">
             <span><b>{completed}</b><small>{roundType === 'med' ? 'Given' : 'Completed'}</small></span>
             <span><b>{skipped}</b><small>Skipped</small></span>
@@ -261,8 +270,8 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
             onClick={() => {
               setRoundSummary({ completed, skipped, roundType, shift });
               setPage('round-summary');
-            }}>View Summary</button>
-          <button type="button" className="roundPrimary" onClick={() => setPage('dashboard')}>Back to Dashboard</button>
+            }}>View summary</button>
+          <button type="button" className="roundPrimary" onClick={() => setPage('dashboard')}>Back to Today</button>
         </section>
       </main>
     );
@@ -277,36 +286,28 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
   if (selectedItem?.done) {
     return (
       <main className="roundsScreen small">
-        <div className="roundsTop">
-          <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>
-          <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
-          <span/>
-        </div>
+        <PageHeader title={roundType === 'med' ? 'Medication round' : `${shift} care round`} onBack={() => setPage('round-kennels')} />
 
         <AnimalHero animal={selectedItem.animal}/>
 
         <section className={roundType === 'med' ? 'roundComplete blue' : 'roundComplete'} style={{ minHeight: 'auto', padding: '32px 0' }}>
           <div className="roundConfetti">✓</div>
-          <h1>Already {roundType === 'med' ? 'Given' : 'Completed'}</h1>
+          <h1>Already {roundType === 'med' ? 'given' : 'done'}</h1>
           <p style={{ color: 'var(--round-muted)', textAlign: 'center', margin: 0 }}>
             {selectedItem.animal.name}'s {roundType === 'med' ? 'medication has' : `${shift} care has`} already been signed off for today.
           </p>
         </section>
 
-        <button type="button" className="roundPrimary" onClick={() => setPage('round-kennels')}>Back to Board</button>
+        <button type="button" className="roundPrimary" onClick={() => setPage('round-kennels')}>Back to the board</button>
       </main>
     );
   }
 
   return (
     <main className="roundsScreen small">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('round-kennels')}><X size={20}/></button>
-        <h1>{roundType === 'med' ? 'Medication Round' : `${shift} Care Round`}</h1>
-        <span/>
-      </div>
+      <PageHeader title={roundType === 'med' ? 'Medication round' : `${shift} care round`} onBack={() => setPage('round-kennels')} />
 
-      <ProgressBar current={completed + 1} total={total || items.length}/>
+      <ProgressBar current={Math.min(completed + 1, total || items.length)} total={total || items.length}/>
       <AnimalHero animal={item.animal}/>
 
       <label className="roundInput">
@@ -325,7 +326,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#39d353',
+              color: 'var(--sage)',
               display: 'flex',
               alignItems: 'center',
               padding: '0 4px',
@@ -349,14 +350,14 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
           <section className="roundInlineMeds">
             <div className="roundInlineMedsHeader">
               <Pill size={16}/>
-              <b>{shift} Medications</b>
+              <b>{shift} meds</b>
               <button
                 type="button"
                 onClick={() => setShowAddMed(!showAddMed)}
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#d8b4fe',
+                  color: 'var(--peri)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -373,7 +374,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
               <div style={{
                 padding: '16px',
                 textAlign: 'center',
-                color: '#98a5b8',
+                color: 'var(--muted)',
                 fontSize: '14px'
               }}>
                 No medications
@@ -397,7 +398,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                             if (done || medBusy === med.id) return;
                             toggleMed(med);
                           }}>
-                          {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark Given'}
+                          {done ? <><CheckCircle2 size={15}/> Given</> : 'Mark given'}
                         </button>
                         <button
                           type="button"
@@ -405,7 +406,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#ff8a8a',
+                            color: 'var(--rose)',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -425,7 +426,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
 
               {showAddMed && (
                 <form onSubmit={submitAddMed} style={{
-                  borderTop: '1px solid rgba(148, 163, 184, 0.12)',
+                  borderTop: '1px solid var(--line-strong)',
                   paddingTop: '10px',
                   marginTop: '10px',
                   display: 'grid',
@@ -440,10 +441,10 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                     style={{
                       width: '100%',
                       minHeight: '42px',
-                      border: '1px solid rgba(148, 163, 184, 0.18)',
+                      border: '1px solid var(--line-strong)',
                       borderRadius: '12px',
-                      background: 'rgba(15, 23, 42, 0.96)',
-                      color: '#f8fafc',
+                      background: 'var(--coat-2)',
+                      color: 'var(--text)',
                       padding: '0 12px',
                       fontSize: '14px'
                     }}
@@ -456,10 +457,10 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                     style={{
                       width: '100%',
                       minHeight: '42px',
-                      border: '1px solid rgba(148, 163, 184, 0.18)',
+                      border: '1px solid var(--line-strong)',
                       borderRadius: '12px',
-                      background: 'rgba(15, 23, 42, 0.96)',
-                      color: '#f8fafc',
+                      background: 'var(--coat-2)',
+                      color: 'var(--text)',
                       padding: '0 12px',
                       fontSize: '14px'
                     }}
@@ -472,7 +473,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                         minHeight: '42px',
                         border: 'none',
                         borderRadius: '12px',
-                        background: 'linear-gradient(135deg, #39d353, #2ea043)',
+                        background: 'var(--eye)',
                         color: 'white',
                         fontWeight: '900',
                         cursor: addMedBusy ? 'wait' : 'pointer'
@@ -485,10 +486,10 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
                       onClick={() => setShowAddMed(false)}
                       style={{
                         minHeight: '42px',
-                        border: '1px solid rgba(148, 163, 184, 0.18)',
+                        border: '1px solid var(--line-strong)',
                         borderRadius: '12px',
                         background: 'transparent',
-                        color: '#98a5b8',
+                        color: 'var(--muted)',
                         fontWeight: '900',
                         cursor: 'pointer'
                       }}
@@ -503,23 +504,23 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
       ) : (
         <section className="roundMedicationCard">
           <div><h2>{item.med.name}</h2><p>{item.med.dose || 'No dosage instructions'}</p><small>{item.med.schedule || 'No schedule'}</small></div>
-          <em>DUE NOW</em>
+          <em>Due now</em>
         </section>
       )}
 
-      <label className="roundInput"><ClipboardList size={17}/><input value={note} onChange={e => setNote(e.target.value)} placeholder="Add note (optional)"/></label>
-      <label className="roundInput" style={{ flexWrap: 'wrap', alignItems: 'flex-start', paddingTop: 10, paddingBottom: 10 }}>
-        <CheckCircle2 size={17}/>
+      <label className="roundInput"><ClipboardList size={17}/><input value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note (optional)"/></label>
+      <section className="panel">
+        <b style={{ color: 'var(--muted)', fontSize: 14 }}>Signing off as</b>
         <EmployeePillPicker value={signedBy} onChange={setSignedBy} />
-      </label>
+      </section>
 
       {roundType === 'med' ? (
-        <div className="roundTwoButtons">
-          <button type="button" className="roundSecondary" onClick={skip}>Not Given</button>
-          <button type="button" className="roundPrimary blue" disabled={busy} onClick={completeAndNext}>Given</button>
+        <div className="roundTwoButtons stickyAction">
+          <button type="button" className="roundSecondary" onClick={skip}>Not given</button>
+          <button type="button" className="roundPrimary blue" disabled={busy} onClick={completeAndNext}>Mark given</button>
         </div>
       ) : (
-        <button type="button" className="roundPrimary" disabled={busy} onClick={completeAndNext}>Complete & Next</button>
+        <button type="button" className="roundPrimary stickyAction" disabled={busy} onClick={completeAndNext}>Done, next cat</button>
       )}
 
       {showInitialsModal && (
@@ -530,7 +531,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
               <button
                 type="button"
                 onClick={cancelInitialsModal}
-                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+                style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex' }}
               >
                 <X size={20}/>
               </button>
@@ -538,7 +539,7 @@ export function RoundRunner({data, roundType, shift, setPage, reload, setRoundSu
 
             <EmployeePillPicker value={modalInitials} onChange={setModalInitials} />
 
-            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
+            {modalError && <small style={{ color: 'var(--rose)', display: 'block', marginTop: 8 }}>{modalError}</small>}
 
             <button type="button" className="primary full" onClick={confirmInitialsModal} style={{ marginTop: 12 }}>
               Confirm

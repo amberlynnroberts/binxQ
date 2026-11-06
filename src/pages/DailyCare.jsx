@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useState } from 'react';
 import {CheckCircle2, ClipboardCheck, Moon, Pill, RefreshCw, Sun, Trash2, Sparkles, X} from 'lucide-react';
 import {fetchDailyCareSignoffs, removeCleaningSignoff, removeMedicationSignoff, signOffCleaning, signOffMedication, todayDateString} from '../lib/dailyCareApi';
@@ -9,7 +10,7 @@ function signedMap(rows, keyBuilder) {
   return new Map((rows || []).map(row => [keyBuilder(row), row]));
 }
 
-export function DailyCare({ data, reload }) {
+export function DailyCare({ data, reload, setPage }) {
   const [shift, setShift] = useState('AM');
   const [careDate, setCareDate] = useState(todayDateString());
   const [signedBy, setSignedBy] = useState('');
@@ -167,19 +168,11 @@ export function DailyCare({ data, reload }) {
 
   return (
     <main>
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => window.history.back()}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>Daily Care</h1>
-        <span/>
-      </div>
-      <div className="title">
-        <h1>Daily Care</h1>
-        <button className="icon" type="button" onClick={loadSignoffs}>
-          <RefreshCw size={18}/>
-        </button>
-      </div>
+      <PageHeader
+        title="Daily care"
+        onBack={() => setPage('dashboard')}
+        action={<button className="icon" type="button" onClick={loadSignoffs} aria-label="Refresh"><RefreshCw size={18}/></button>}
+      />
       <section className="panel careControls">
         <div className="shiftToggle">
           <button type="button" className={shift === 'AM' ? 'primary' : 'link'} onClick={() => setShift('AM')}>
@@ -241,11 +234,11 @@ export function DailyCare({ data, reload }) {
                     disabled={busyKey === key}
                     onClick={() => toggleCleaning(animal)}>
                     {signoff ? <CheckCircle2 size={18}/> : <ClipboardCheck size={18}/>}
-                    {signoff ? 'Completed' : 'Confirm Complete'}
+                    {signoff ? 'Done' : 'Mark done'}
                   </button>
                   <div>
                     <h3>{animal.name}</h3>
-                    <p>Kennel: {animal.kennel || 'Unassigned'} · {animal.status}</p>
+                    <p>{animal.kennel || 'No kennel'}</p>
                     {signoff && <small>Signed by {signoff.signed_by} at {new Date(signoff.created_at).toLocaleTimeString()}</small>}
                   </div>
                 </div>
@@ -313,7 +306,7 @@ export function DailyCare({ data, reload }) {
               <button
                 type="button"
                 onClick={cancelInitialsModal}
-                style={{ background: 'none', border: 'none', color: '#98a5b8', cursor: 'pointer', display: 'flex' }}
+                style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex' }}
               >
                 <X size={20}/>
               </button>
@@ -321,7 +314,7 @@ export function DailyCare({ data, reload }) {
 
             <EmployeePillPicker value={modalInitials} onChange={setModalInitials} />
 
-            {modalError && <small style={{ color: '#ff4d4f', display: 'block', marginTop: 8 }}>{modalError}</small>}
+            {modalError && <small style={{ color: 'var(--rose)', display: 'block', marginTop: 8 }}>{modalError}</small>}
 
             <button type="button" className="primary full" onClick={confirmInitialsModal} style={{ marginTop: 12 }}>
               Confirm

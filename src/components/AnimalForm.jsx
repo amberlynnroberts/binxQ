@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { PageHeader } from './PageHeader';
 import { formatAge } from '../lib/formatAge';
 
 export function defaultAnimalForm() {
@@ -41,13 +41,13 @@ export function AnimalForm({ title, initialForm, submitText, onSubmit, onCancel 
 
   return (
     <main>
+      <PageHeader title={title} onBack={onCancel} />
       <form className="panel form" onSubmit={submit}>
-        <div className="title"><h1>{title}</h1><button type="button" className="icon" onClick={onCancel}><X/></button></div>
         {error && <p className="error">{error}</p>}
 
         <label>Name<input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Gorilla" /></label>
-        <label>Color / Description<input value={form.color} onChange={e => set('color', e.target.value)} placeholder="Black DSH" /></label>
-        <label>Age (Months)<input type="number" value={form.age} onChange={e => setForm(prev => ({ ...prev, age: e.target.value}))}/><small className="fieldPreview">{formatAge(form.age)}</small></label>
+        <label>Color or description<input value={form.color} onChange={e => set('color', e.target.value)} placeholder="Black DSH" /></label>
+        <label>Age in months<input type="number" inputMode="numeric" value={form.age} onChange={e => setForm(prev => ({ ...prev, age: e.target.value}))}/><small className="fieldPreview">{formatAge(form.age)}</small></label>
         <label>Sex
           <select value={form.sex} onChange={e => set('sex', e.target.value)}>
             <option>Unknown</option><option>Female</option><option>Male</option>
@@ -74,7 +74,7 @@ export function AnimalForm({ title, initialForm, submitText, onSubmit, onCancel 
           </select>
         </label>
 
-        <label>Intake Date<input type="date" value={form.intake_date} onChange={e => set('intake_date', e.target.value)} /></label>
+        <label>Intake date<input type="date" value={form.intake_date} onChange={e => set('intake_date', e.target.value)} /></label>
 
         <button className="primary full" disabled={saving}>{saving ? 'Saving...' : submitText}</button>
       </form>

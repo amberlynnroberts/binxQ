@@ -41,17 +41,17 @@ export function EmployeePillPicker({ value, onChange }) {
   }, []);
 
   if (loading) {
-    return <small style={{ color: 'var(--round-muted, #98a5b8)' }}>Loading names...</small>;
+    return <small style={{ color: 'var(--muted)' }}>Loading names...</small>;
   }
 
   if (error) {
-    return <small style={{ color: '#ff8a8a' }}>{error}</small>;
+    return <small style={{ color: 'var(--rose)' }}>{error}</small>;
   }
 
   if (employees.length === 0) {
     return (
-      <small style={{ color: 'var(--round-muted, #98a5b8)' }}>
-        No employees set up yet — add names from More → Manage Employees.
+      <small style={{ color: 'var(--muted)' }}>
+        No names yet. Add them in More, then Manage employees.
       </small>
     );
   }
@@ -69,13 +69,14 @@ export function EmployeePillPicker({ value, onChange }) {
               setStoredEmployeeName(emp.name);
             }}
             style={{
-              border: selected ? '1px solid rgba(57, 211, 83, 0.5)' : '1px solid rgba(148, 163, 184, 0.18)',
-              background: selected ? 'rgba(57, 211, 83, 0.16)' : 'rgba(255, 255, 255, 0.05)',
-              color: selected ? '#86efac' : 'var(--round-text, #f8fafc)',
+              border: selected ? '1px solid var(--eye)' : '1px solid var(--line-strong)',
+              background: selected ? 'var(--eye)' : 'var(--coat-2)',
+              color: selected ? 'var(--eye-ink)' : 'var(--text)',
               borderRadius: 999,
-              padding: '10px 16px',
-              fontWeight: 800,
-              fontSize: 14,
+              minHeight: 44,
+              padding: '0 18px',
+              fontWeight: 700,
+              fontSize: 15,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}

@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardCheck } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { EmployeePillPicker } from '../components/EmployeePillPicker';
 import { signOffQuarantinePaper, fetchDailyReport, todayDateString } from '../lib/reportsApi';
 
 const checklists = {
@@ -72,12 +74,12 @@ export function QuarantineChecklist({ setPage }) {
 
   async function completeChecklist() {
     if (!initials.trim()) {
-      setStatus('Enter initials first.');
+      setStatus('Pick your name first.');
       return;
     }
 
     if (!allDone) {
-      setStatus('Finish all checklist items first.');
+      setStatus(`Check off all ${items.length} items first.`);
       return;
     }
 
@@ -94,13 +96,7 @@ export function QuarantineChecklist({ setPage }) {
 
   return (
     <main className="roundsScreen quarantinePage">
-      <div className="quarantineHeader">
-        <button type="button" onClick={() => setPage('dashboard')}>×</button>
-        <div>
-          <p>Quarantine Room</p>
-          <h1>Daily Checklist</h1>
-        </div>
-      </div>
+      <PageHeader title="Quarantine room" subtitle="Daily checklist" onBack={() => setPage('dashboard')} />
 
       <section className="quarantineShiftTabs">
         <button
@@ -108,7 +104,7 @@ export function QuarantineChecklist({ setPage }) {
           className={shift === 'AM' ? 'active' : ''}
           onClick={() => setShift('AM')}
         >
-          AM Checklist
+          AM
           {completedShifts.AM && <CheckCircle2 size={14} style={{ marginLeft: 6 }} />}
         </button>
 
@@ -117,7 +113,7 @@ export function QuarantineChecklist({ setPage }) {
           className={shift === 'PM' ? 'active' : ''}
           onClick={() => setShift('PM')}
         >
-          PM Checklist
+          PM
           {completedShifts.PM && <CheckCircle2 size={14} style={{ marginLeft: 6 }} />}
         </button>
       </section>
@@ -126,7 +122,7 @@ export function QuarantineChecklist({ setPage }) {
         <section className="quarantineCard">
           <div className="quarantineComplete">
             <CheckCircle2 size={40} />
-            <h2>{shift} Checklist Complete</h2>
+            <h2>{shift} checklist done</h2>
             <p>Signed off by <b>{alreadyCompleted.checked_by}</b></p>
             <p>All {items.length} tasks completed.</p>
           </div>
@@ -136,11 +132,11 @@ export function QuarantineChecklist({ setPage }) {
           <section className="quarantineCard">
             <div className="quarantineCardTop">
               <div>
-                <h2>{shift} Checklist</h2>
-                <p>{completedCount} of {items.length} completed</p>
+                <h2>{shift} checklist</h2>
+                <p>{completedCount} of {items.length} done</p>
               </div>
               <button type="button" className="selectAllBtn" onClick={selectAll}>
-                Select All
+                Check all
               </button>
             </div>
 
@@ -163,22 +159,18 @@ export function QuarantineChecklist({ setPage }) {
           </section>
 
           <section className="quarantineCard signoffCard">
-            <label className="roundInput">
-              <ClipboardCheck size={17} />
-              <input
-                value={initials}
-                onChange={e => setInitials(e.target.value)}
-                placeholder="Initials"
-              />
-            </label>
+            <b style={{ color: 'var(--muted)', fontSize: 14 }}>Signing off as</b>
+            <EmployeePillPicker value={initials} onChange={setInitials} />
+          </section>
 
+          <section style={{ display: 'grid', gap: 10 }}>
             <button
               type="button"
-              className="roundPrimary"
+              className="roundPrimary stickyAction"
               onClick={completeChecklist}
             >
               <CheckCircle2 size={18} />
-              Mark {shift} Complete
+              Sign off {shift} checklist
             </button>
 
             {status && <p className={status.includes('complete') ? 'success' : 'error'}>{status}</p>}

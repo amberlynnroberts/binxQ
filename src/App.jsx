@@ -45,6 +45,11 @@ export default function App() {
     localStorage.setItem('kennelcheck-theme', theme);
   }, [theme]);
 
+  // Each screen starts at the top, like a real page change.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page]);
+
   useEffect(() => {
     if (!selected && data.animals.length) setSelected(data.animals[0].id);
   }, [data.animals, selected]);
@@ -144,11 +149,6 @@ export default function App() {
       setAnimalView={setAnimalView}
       onMedRound={() => startRound('med', 'AM')}
       activeRoundType={activeRound.type}>
-      <button
-        className="floatingFeedback"
-          onClick={() => setShowFeedback(true)}>
-          💬
-        </button>
         {showFeedback && (
           <FeedbackModal onClose={() => setShowFeedback(false)} />
         )}
@@ -203,6 +203,7 @@ export default function App() {
           <DailyCare
             data={visibleData || data}
             reload={reload}
+            setPage={setPage}
           />
         )}
 
@@ -229,9 +230,9 @@ export default function App() {
 
         {page === 'add' && (
           <AnimalForm
-            title="Add Cat to Quarantine"
+            title="Add a cat"
             initialForm={defaultAnimalForm()}
-            submitText="Add Cat"
+            submitText="Add cat"
             onSubmit={addAnimal}
             onCancel={() => setPage('kennels')}
           />
@@ -262,7 +263,7 @@ export default function App() {
           <AnimalForm
             title={`Edit ${animal.name}`}
             initialForm={editInitial}
-            submitText="Save Changes"
+            submitText="Save changes"
             onSubmit={editAnimal}
             onCancel={() => setPage('card')}
           />
@@ -280,6 +281,7 @@ export default function App() {
             data={visibleData}
             allAnimals={data.animals}
             select={selectAnimal}
+            setPage={setPage}
           />
         )}
 
@@ -293,6 +295,7 @@ export default function App() {
             dbStatus={dbStatus}
             setDbStatus={setDbStatus}
             setPage={setPage}
+            onFeedback={() => setShowFeedback(true)}
           />
         )}
 
@@ -307,7 +310,7 @@ export default function App() {
         )}
         
         {page === 'reports' && (
-          <Reports data={data} />
+          <Reports data={data} setPage={setPage} />
         )}
 
         {page === 'adoption-records' && (
@@ -322,7 +325,7 @@ export default function App() {
           <ManageEmployees setPage={setPage} />
         )}
 
-        {page === 'text-alert' && <TextAlert />}
+        {page === 'text-alert' && <TextAlert setPage={setPage} />}
       </RoundsShell>
   );
 }

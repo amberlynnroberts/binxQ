@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React from 'react';
 import { ClipboardCheck, ChevronRight, Pill, Stethoscope, X } from 'lucide-react';
 export function RoundSelect({ data, setPage, startRound }) {
@@ -6,11 +7,7 @@ export function RoundSelect({ data, setPage, startRound }) {
 
   return (
     <main className="roundsScreen small">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('dashboard')}><X size={20}/></button>
-        <h1>Select Round</h1>
-        <span/>
-      </div>
+      <PageHeader title="Select Round" onBack={() => setPage('dashboard')} />
 
       <section className="roundStartList">
         <button type="button" className="roundChoice green" onClick={() => startRound('care', 'AM')}>

@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/PageHeader';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronRight, Circle, ClipboardCheck, Pill, Search } from 'lucide-react';
 import { AnimalThumb } from '../components/AnimalPhoto';
@@ -24,7 +25,7 @@ function ProgressPill({ progress }) {
       </span>
     );
   }
-  return <span className="roundBoardPercent">{progress.percent}% complete</span>;
+  return <span className="roundBoardPercent">{progress.percent}%</span>;
 }
 
 function CatStatusBadge({ done, roundType }) {
@@ -67,9 +68,9 @@ function MedShiftPill({ shiftLabel, done, onClick }) {
         fontSize: 11,
         fontWeight: 700,
         border: '1px solid',
-        borderColor: done ? 'rgba(57, 211, 83, 0.35)' : 'rgba(59, 130, 246, 0.35)',
-        background: done ? 'rgba(57, 211, 83, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-        color: done ? '#39d353' : '#3b82f6',
+        borderColor: done ? 'transparent' : 'transparent',
+        background: done ? 'var(--sage-soft)' : 'var(--peri-soft)',
+        color: done ? 'var(--sage)' : 'var(--peri)',
         cursor: done ? 'default' : 'pointer',
         lineHeight: 1,
       }}
@@ -97,8 +98,8 @@ function KennelBadgeWithStatus({ kennel, done }) {
           width: 11,
           height: 11,
           borderRadius: '50%',
-          background: done ? '#39d353' : '#3b82f6',
-          border: '2px solid var(--round-bg, #0f172a)',
+          background: done ? 'var(--sage)' : 'var(--peri)',
+          border: '2px solid var(--coat)',
         }}
         title={done ? 'Done' : 'Pending'}
       />
@@ -323,7 +324,7 @@ export function RoundKennels({
     return getKennelProgress({ cats: countedCats, completedAnimalIds: completedCareIds });
   }
 
-  const title = roundType === 'med' ? 'Medication Round' : `${shift} Care Round`;
+  const title = roundType === 'med' ? 'Medication round' : `${shift} care round`;
   const overallProgress = getProgressForCats(visibleAnimals);
 
   function MedCatBadges({ cat }) {
@@ -345,19 +346,13 @@ export function RoundKennels({
 
   return (
     <main className="roundBoardScreen">
-      <div className="roundsTop">
-        <button type="button" className="roundsClose" onClick={() => setPage('dashboard')}>
-          <ArrowLeft size={20}/>
-        </button>
-        <h1>{title}</h1>
-        <span/>
-      </div>
+      <PageHeader title={title} onBack={() => setPage('dashboard')} />
 
       <section className={roundType === 'med' ? 'roundBoardHero blue' : 'roundBoardHero'}>
         <div>
-          <p>{roundType === 'med' ? 'Select a cat for meds' : 'Select a cat to sign off'}</p>
-          <h2>{roundType === 'med' ? 'All quarantine cats' : 'Grouped by kennel'}</h2>
-          <small>Tap a cat card to open the sign-off screen.</small>
+          <p>{overallProgress.done ? 'All done' : `${overallProgress.completed} of ${overallProgress.total} done`}</p>
+          <h2>{roundType === 'med' ? 'Tap a cat to give meds' : 'Tap a cat to sign off'}</h2>
+          <small>{roundType === 'med' ? 'AM and PM doses show on each cat.' : 'Cats are grouped by kennel.'}</small>
         </div>
         {roundType === 'med' ? (
           <Pill size={34}/>
@@ -373,7 +368,7 @@ export function RoundKennels({
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search cats or kennels..."
+          placeholder="Search cats or kennels"
         />
       </label>
 
@@ -395,7 +390,7 @@ export function RoundKennels({
                 <div>
                   <h2>Cat Lounge</h2>
                   <small>
-                    {loungeAnimals.filter(a => isCatDone(a)).length} of {loungeAnimals.length} complete
+                    {loungeAnimals.filter(a => isCatDone(a)).length} of {loungeAnimals.length} done
                   </small>
                 </div>
                 <ProgressPill progress={getProgressForCats(loungeAnimals)} />
@@ -438,7 +433,7 @@ export function RoundKennels({
                   <span className="kennel">Q</span>
                   <div>
                     <h2>Quarantine</h2>
-                    <small>{overallProgress.completed} of {overallProgress.total} complete</small>
+                    <small>{overallProgress.completed} of {overallProgress.total} done</small>
                   </div>
                   <ProgressPill progress={overallProgress}/>
                 </div>
@@ -482,8 +477,8 @@ export function RoundKennels({
                       {kennelShort(kennel)}
                     </span>
                     <div>
-                      <h2>{kennel}</h2>
-                      <small>{progress.completed} of {progress.total} complete</small>
+                      <h2>Kennel {kennelShort(kennel)}</h2>
+                      <small>{progress.completed} of {progress.total} done</small>
                     </div>
                     <ProgressPill progress={progress}/>
                   </div>
